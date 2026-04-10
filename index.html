@@ -8,22 +8,22 @@
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@300;400;500;600&display=swap');
 
   :root {
-    --bg:        #0e1117;
-    --surface:   #161b25;
-    --card:      #1c2333;
-    --border:    #2a3347;
-    --gold:      #c9a227;
-    --gold-dim:  #8a6d18;
-    --green:     #22c55e;
-    --red:       #ef4444;
-    --amber:     #f59e0b;
-    --blue:      #3b82f6;
-    --text:      #e2e8f0;
-    --muted:     #64748b;
+    --bg:        #f0f2f5;
+    --surface:   #ffffff;
+    --card:      #ffffff;
+    --border:    #dde1e9;
+    --gold:      #b8922e;
+    --gold-dim:  #d4a94a;
+    --green:     #16a34a;
+    --red:       #dc2626;
+    --amber:     #d97706;
+    --blue:      #2563eb;
+    --text:      #1e2533;
+    --muted:     #6b7280;
     --nav-h:     58px;
-    --gen-340:   #3b82f6;
-    --gen-110:   #8b5cf6;
-    --gen-500:   #f59e0b;
+    --gen-340:   #2563eb;
+    --gen-110:   #7c3aed;
+    --gen-500:   #b45309;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -137,7 +137,7 @@
   .form-group.full { grid-column: 1 / -1; }
   label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
   input, select, textarea {
-    background: var(--bg);
+    background: #f8fafc;
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text);
@@ -147,8 +147,8 @@
     transition: border .2s;
     width: 100%;
   }
-  input:focus, select:focus, textarea:focus { border-color: var(--gold); outline: none; }
-  select option { background: var(--card); }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold); outline: none; background: #fff; }
+  select option { background: #fff; }
   textarea { resize: vertical; min-height: 70px; }
 
   /* ── CHECK ITEMS ── */
@@ -247,10 +247,10 @@
   .gsc-info { flex: 1; }
   .gsc-model { font-size: 12px; color: var(--muted); }
   .gsc-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
-  .badge-ok { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
-  .badge-warn { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
-  .badge-fault { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
-  .badge-ns { background: rgba(100,116,139,0.15); color: var(--muted); border: 1px solid rgba(100,116,139,0.3); }
+  .badge-ok    { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+  .badge-warn  { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+  .badge-fault { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+  .badge-ns    { background: #f1f5f9; color: var(--muted); border: 1px solid var(--border); }
   .gsc-body { padding: 14px 18px; }
   .gsc-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .gsc-check-item { font-size: 12px; display: flex; align-items: center; gap: 6px; }
@@ -258,17 +258,17 @@
   /* ── TABLE ── */
   .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
   table { border-collapse: collapse; width: 100%; }
-  thead tr { background: var(--surface); }
+  thead tr { background: #f1f4f9; }
   th { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
   td { padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 12px; vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(255,255,255,0.025); }
+  tr:hover td { background: #f8fafc; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
-  .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
-  .badge-red   { background: rgba(239,68,68,0.15); color: var(--red); }
-  .badge-amber { background: rgba(245,158,11,0.15); color: var(--amber); }
-  .badge-blue  { background: rgba(59,130,246,0.15); color: var(--blue); }
-  .badge-purple { background: rgba(139,92,246,0.15); color: #a78bfa; }
+  .badge-green  { background: #dcfce7; color: #15803d; }
+  .badge-red    { background: #fee2e2; color: #b91c1c; }
+  .badge-amber  { background: #fef3c7; color: #92400e; }
+  .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+  .badge-purple { background: #ede9fe; color: #6d28d9; }
 
   /* ── MAINTENANCE CARDS ── */
   .maint-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px; }
@@ -290,7 +290,7 @@
   .ok-val { color: var(--green) !important; }
 
   /* ── PROGRESS BAR ── */
-  .prog-wrap { background: var(--bg); border-radius: 20px; height: 6px; overflow: hidden; margin-top: 8px; }
+  .prog-wrap { background: #e5e7eb; border-radius: 20px; height: 6px; overflow: hidden; margin-top: 8px; }
   .prog-bar { height: 100%; border-radius: 20px; transition: width .5s; }
   .prog-green { background: var(--green); }
   .prog-amber { background: var(--amber); }
@@ -311,7 +311,7 @@
   .filter-row select, .filter-row input { max-width: 180px; }
   .filter-row label { white-space: nowrap; }
   .btn-secondary {
-    background: var(--card);
+    background: #fff;
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text);
@@ -324,7 +324,7 @@
     transition: all .2s;
     text-transform: uppercase;
   }
-  .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-secondary:hover { border-color: var(--gold); color: var(--gold); background: #fdfaf4; }
 
   /* ── PIN MODAL ── */
   .modal-overlay {
@@ -352,7 +352,7 @@
   .pin-dot.filled { background: var(--gold); }
   .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .pin-btn {
-    background: var(--surface);
+    background: #f8fafc;
     border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -682,10 +682,11 @@
 <div id="tab-report" class="page">
   <div class="section-title"><span class="accent">📈</span> Generator Report</div>
 
-  <div class="filter-row">
+  <!-- Filter bar — refines auto-loaded data -->
+  <div class="filter-row" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:18px;">
     <div class="form-group">
       <label>Generator</label>
-      <select id="rep-gen">
+      <select id="rep-gen" onchange="loadReport()">
         <option value="">All Generators</option>
         <option value="340">340 KVA</option>
         <option value="110">110 KVA</option>
@@ -694,23 +695,23 @@
     </div>
     <div class="form-group">
       <label>From</label>
-      <input type="date" id="rep-from">
+      <input type="date" id="rep-from" onchange="loadReport()">
     </div>
     <div class="form-group">
       <label>To</label>
-      <input type="date" id="rep-to">
+      <input type="date" id="rep-to" onchange="loadReport()">
     </div>
     <div class="form-group">
       <label>Status</label>
-      <select id="rep-status">
-        <option value="">All</option>
+      <select id="rep-status" onchange="loadReport()">
+        <option value="">All Statuses</option>
         <option value="OK">OK</option>
         <option value="Fault">Fault</option>
         <option value="Maintenance Required">Maintenance Required</option>
         <option value="Out of Service">Out of Service</option>
       </select>
     </div>
-    <button class="btn-secondary" onclick="loadReport()" style="align-self:flex-end;">Search</button>
+    <button class="btn-secondary" onclick="clearReportFilters()" style="align-self:flex-end;">Clear Filters</button>
   </div>
 
   <div id="report-loading" style="display:none;text-align:center;padding:30px;color:var(--muted);">
@@ -743,13 +744,16 @@
   </div>
 
   <div id="maint-content" style="display:none;">
-    <!-- Due/Overdue summary -->
-    <div class="tiles-row" id="maint-tiles"></div>
 
-    <div class="section-title" style="font-size:16px;"><span class="accent">⏰</span> Service Due Status</div>
-    <div class="maint-grid" id="maint-due-cards"></div>
+    <!-- Compact status bar (replaces 3 separate tiles) -->
+    <div id="maint-status-bar" style="display:flex;gap:12px;margin-bottom:22px;flex-wrap:wrap;"></div>
 
-    <div class="section-title" style="font-size:16px;"><span class="accent">📋</span> Maintenance History</div>
+    <!-- Per-generator grouped service schedule -->
+    <div class="section-title" style="font-size:16px;"><span class="accent">⏰</span> Service Schedule — All Generators</div>
+    <div id="maint-schedule-panels"></div>
+
+    <!-- Maintenance History -->
+    <div class="section-title" style="font-size:16px;margin-top:6px;"><span class="accent">📋</span> Service History</div>
     <div class="filter-row">
       <div class="form-group">
         <label>Generator</label>
@@ -770,14 +774,14 @@
       <table>
         <thead>
           <tr>
-            <th>Date</th><th>Generator</th><th>Task</th><th>OH at Service</th><th>Next Due (OH)</th><th>Hours Until Due</th><th>Technician</th><th>Notes</th>
+            <th>Date</th><th>Generator</th><th>Task</th><th>OH at Service</th><th>Next Due (OH)</th><th>Technician</th><th>Notes</th>
           </tr>
         </thead>
         <tbody id="maint-hist-body"></tbody>
       </table>
     </div>
 
-    <!-- Add Maintenance Record -->
+    <!-- Log New Service -->
     <div style="margin-top:24px;">
       <div class="section-title" style="font-size:16px;"><span class="accent">➕</span> Log New Maintenance Service</div>
       <div class="config-panel">
@@ -933,10 +937,33 @@
     <!-- Operators Config -->
     <div class="config-panel">
       <h3>Portal Operators</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Manage the list of authorised operators shown in the Submit form dropdown. Maintained in the Portal_Operators sheet tab.</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Generator operators authorised to submit daily checks. Add or remove as staff change.</p>
+
+      <!-- Add operator form -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;align-items:flex-end;">
+        <div class="form-group" style="flex:2;min-width:140px;">
+          <label>Operator Name</label>
+          <input type="text" id="new-op-name" placeholder="Full name">
+        </div>
+        <div class="form-group" style="flex:2;min-width:130px;">
+          <label>Role / Title</label>
+          <input type="text" id="new-op-role" placeholder="e.g. Generator Operator">
+        </div>
+        <div class="form-group" style="flex:1;min-width:110px;">
+          <label>Generator Access</label>
+          <select id="new-op-access">
+            <option value="All">All</option>
+            <option value="340 KVA">340 KVA</option>
+            <option value="110 KVA">110 KVA</option>
+            <option value="500 KVA">500 KVA</option>
+          </select>
+        </div>
+        <button class="btn-submit" style="width:auto;padding:10px 20px;font-size:13px;align-self:flex-end;" onclick="addOperator()">+ Add Operator</button>
+      </div>
+
       <div class="table-wrap" id="ops-table-wrap">
         <table>
-          <thead><tr><th>#</th><th>Name</th><th>Role</th><th>Generator Access</th></tr></thead>
+          <thead><tr><th>#</th><th>Name</th><th>Role</th><th>Generator Access</th><th>Action</th></tr></thead>
           <tbody id="ops-body"></tbody>
         </table>
       </div>
@@ -997,7 +1024,7 @@
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwv1N0muKTB6IEjS4SLBxjiKa_JzlChsDtzoMbjnEg4Z3kdlas7lfcnh6qT0r2b8akD/exec'; // Replace with deployed GAS URL
+const SCRIPT_URL = 'YOUR_GAS_EXEC_URL_HERE'; // Replace with deployed GAS URL
 const PIN = '1234';
 const GENS = {
   '340': { label: '340 KVA', model: 'P126Ti', serial: '433505', color: '#3b82f6', class: 'c340' },
@@ -1021,6 +1048,8 @@ document.addEventListener('DOMContentLoaded', () => {
   updateClock();
   setInterval(updateClock, 1000);
   loadDashboard();
+  // Report pre-loads silently so it's ready when the tab is opened
+  loadReport();
 });
 
 function updateClock() {
@@ -1047,6 +1076,7 @@ function switchTab(id) {
   });
 
   if (id === 'dashboard') loadDashboard();
+  if (id === 'report') loadReport();
   if (id === 'maint-log') loadMaintLog();
   if (id === 'maint-config') loadConfig();
 }
@@ -1257,7 +1287,7 @@ async function loadReport() {
   try {
     data = await apiCall({ action: 'getReport', generator: gen, from, to, status });
   } catch(e) {
-    data = { logs: getDemoLogs(), counts: { total: 5, ok: 4, fault: 1 } };
+    data = { logs: getDemoLogs(), counts: { total: 3, ok: 2, fault: 0, maint: 1 } };
   }
 
   const logs = data.logs || [];
@@ -1265,7 +1295,7 @@ async function loadReport() {
 
   document.getElementById('rep-stats').innerHTML = `
     <div class="report-stat"><div class="rs-val">${counts.total || logs.length}</div><div class="rs-label">Total Submissions</div></div>
-    <div class="report-stat"><div class="rs-val" style="color:var(--green)">${counts.ok || 0}</div><div class="rs-label">OK Status</div></div>
+    <div class="report-stat"><div class="rs-val" style="color:var(--green)">${counts.ok || 0}</div><div class="rs-label">OK</div></div>
     <div class="report-stat"><div class="rs-val" style="color:var(--red)">${counts.fault || 0}</div><div class="rs-label">Faults</div></div>
     <div class="report-stat"><div class="rs-val" style="color:var(--amber)">${counts.maint || 0}</div><div class="rs-label">Maint Required</div></div>
   `;
@@ -1291,6 +1321,16 @@ async function loadReport() {
   document.getElementById('report-loading').style.display = 'none';
 }
 
+function clearReportFilters() {
+  document.getElementById('rep-gen').value = '';
+  document.getElementById('rep-status').value = '';
+  const today = new Date().toISOString().slice(0,10);
+  const d30 = new Date(); d30.setDate(d30.getDate()-30);
+  document.getElementById('rep-from').value = d30.toISOString().slice(0,10);
+  document.getElementById('rep-to').value = today;
+  loadReport();
+}
+
 // ── MAINT LOG ────────────────────────────────────────────────
 async function loadMaintLog() {
   document.getElementById('maint-loading').style.display = 'block';
@@ -1311,52 +1351,107 @@ async function loadMaintLog() {
 function renderMaintLog(data) {
   const due = data.due_items || getDemoDueItems();
   let overdue = 0, dueSoon = 0, ok = 0;
-
-  let dueHtml = '';
-  for (const item of due) {
-    const pct = Math.min(100, Math.max(0, ((item.interval - item.hours_until_due) / item.interval) * 100));
-    const cls = item.hours_until_due < 0 ? 'overdue' : item.hours_until_due < 50 ? 'due-soon' : 'ok-val';
-    const progCls = item.hours_until_due < 0 ? 'prog-red' : item.hours_until_due < 50 ? 'prog-amber' : 'prog-green';
+  due.forEach(item => {
     if (item.hours_until_due < 0) overdue++;
     else if (item.hours_until_due < 50) dueSoon++;
     else ok++;
-    const genClass = item.generator.includes('340') ? 'c340' : item.generator.includes('110') ? 'c110' : 'c500';
-    const genColor = item.generator.includes('340') ? 'var(--gen-340)' : item.generator.includes('110') ? 'var(--gen-110)' : 'var(--gen-500)';
-    dueHtml += `
-      <div class="maint-card">
-        <div class="mc-header">
-          <span class="mc-gen" style="color:${genColor}">${item.generator}</span>
-          <span class="mc-task">${item.task}</span>
-          <span class="badge ${item.hours_until_due < 0 ? 'badge-red' : item.hours_until_due < 50 ? 'badge-amber' : 'badge-green'}">${item.hours_until_due < 0 ? 'OVERDUE' : item.hours_until_due < 50 ? 'DUE SOON' : 'OK'}</span>
-        </div>
-        <div class="mc-row"><span class="mc-key">Last Serviced (OH)</span><span class="mc-val">${item.last_oh} hrs</span></div>
-        <div class="mc-row"><span class="mc-key">Current OH</span><span class="mc-val">${item.current_oh} hrs</span></div>
-        <div class="mc-row"><span class="mc-key">Interval</span><span class="mc-val">Every ${item.interval} hrs</span></div>
-        <div class="mc-row"><span class="mc-key">Next Due at</span><span class="mc-val">${item.next_due_oh} OH</span></div>
-        <div class="mc-row"><span class="mc-key">Hours Until Due</span><span class="mc-val ${cls}">${item.hours_until_due < 0 ? Math.abs(item.hours_until_due) + ' hrs OVERDUE' : item.hours_until_due + ' hrs'}</span></div>
-        <div class="prog-wrap"><div class="prog-bar ${progCls}" style="width:${pct}%"></div></div>
-      </div>`;
-  }
-  document.getElementById('maint-due-cards').innerHTML = dueHtml;
+  });
 
-  document.getElementById('maint-tiles').innerHTML = `
-    <div class="tile ${overdue>0?'warn':'ok'}">
-      <div class="tile-label">Overdue</div>
-      <div class="tile-val" style="color:var(--red)">${overdue}</div>
-      <div class="tile-sub">Immediate attention</div>
+  // ── Compact status bar (3 inline chips instead of 3 large tiles) ──
+  document.getElementById('maint-status-bar').innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;background:${overdue>0?'#fee2e2':'#f0fdf4'};border:1px solid ${overdue>0?'#fca5a5':'#86efac'};border-radius:8px;padding:10px 16px;flex:1;min-width:140px;">
+      <span style="font-size:18px;">${overdue>0?'🔴':'✅'}</span>
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:${overdue>0?'var(--red)':'var(--green)'};">${overdue}</div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:var(--muted);text-transform:uppercase;">Overdue</div>
+      </div>
     </div>
-    <div class="tile ${dueSoon>0?'warn':'ok'}">
-      <div class="tile-label">Due Soon</div>
-      <div class="tile-val" style="color:var(--amber)">${dueSoon}</div>
-      <div class="tile-sub">Within 50 hours</div>
+    <div style="display:flex;align-items:center;gap:8px;background:${dueSoon>0?'#fef3c7':'#f0fdf4'};border:1px solid ${dueSoon>0?'#fcd34d':'#86efac'};border-radius:8px;padding:10px 16px;flex:1;min-width:140px;">
+      <span style="font-size:18px;">${dueSoon>0?'⚠️':'✅'}</span>
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:${dueSoon>0?'var(--amber)':'var(--green)'};">${dueSoon}</div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:var(--muted);text-transform:uppercase;">Due Soon (&lt;50 hrs)</div>
+      </div>
     </div>
-    <div class="tile ok">
-      <div class="tile-label">On Schedule</div>
-      <div class="tile-val" style="color:var(--green)">${ok}</div>
-      <div class="tile-sub">No action needed</div>
+    <div style="display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 16px;flex:1;min-width:140px;">
+      <span style="font-size:18px;">🟢</span>
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--green);">${ok}</div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:var(--muted);text-transform:uppercase;">On Schedule</div>
+      </div>
     </div>
   `;
 
+  // ── Per-generator grouped panels ──
+  const genGroups = { '340 KVA': [], '110 KVA': [], '500 KVA': [] };
+  due.forEach(item => {
+    if (genGroups[item.generator]) genGroups[item.generator].push(item);
+  });
+
+  let panels = '';
+  const genMeta = {
+    '340 KVA': { color: 'var(--gen-340)', bg: '#eff6ff', border: '#bfdbfe', model: 'P126Ti' },
+    '110 KVA': { color: 'var(--gen-110)', bg: '#f5f3ff', border: '#ddd6fe', model: '2428-1500' },
+    '500 KVA': { color: 'var(--gen-500)', bg: '#fffbeb', border: '#fde68a', model: 'DC13 072A' },
+  };
+
+  for (const [gen, items] of Object.entries(genGroups)) {
+    if (!items.length) continue;
+    const meta = genMeta[gen];
+    const worstItem = items.reduce((a, b) => a.hours_until_due < b.hours_until_due ? a : b);
+    const worstCls = worstItem.hours_until_due < 0 ? 'badge-red' : worstItem.hours_until_due < 50 ? 'badge-amber' : 'badge-green';
+    const worstLabel = worstItem.hours_until_due < 0 ? 'ACTION REQUIRED' : worstItem.hours_until_due < 50 ? 'DUE SOON' : 'ALL OK';
+
+    let rows = '';
+    items.forEach(item => {
+      const pct = Math.min(100, Math.max(0, ((item.interval - item.hours_until_due) / item.interval) * 100));
+      const cls = item.hours_until_due < 0 ? 'overdue' : item.hours_until_due < 50 ? 'due-soon' : 'ok-val';
+      const progCls = item.hours_until_due < 0 ? 'prog-red' : item.hours_until_due < 50 ? 'prog-amber' : 'prog-green';
+      const dueLabel = item.hours_until_due < 0
+        ? `<span class="${cls}">${Math.abs(item.hours_until_due)} hrs overdue</span>`
+        : `<span class="${cls}">${item.hours_until_due} hrs remaining</span>`;
+      rows += `
+        <tr>
+          <td style="font-weight:600;">${item.task}</td>
+          <td>Every ${item.interval} hrs</td>
+          <td>${item.last_oh} OH</td>
+          <td>${item.current_oh} OH</td>
+          <td>${item.next_due_oh} OH</td>
+          <td>
+            ${dueLabel}
+            <div class="prog-wrap" style="margin-top:5px;"><div class="prog-bar ${progCls}" style="width:${pct}%"></div></div>
+          </td>
+        </tr>`;
+    });
+
+    panels += `
+      <div style="border:1px solid ${meta.border};border-radius:10px;overflow:hidden;margin-bottom:16px;">
+        <div style="background:${meta.bg};border-bottom:1px solid ${meta.border};padding:12px 16px;display:flex;align-items:center;gap:12px;">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:${meta.color};">${gen}</span>
+          <span style="font-size:12px;color:var(--muted);">${meta.model}</span>
+          <span class="badge ${worstCls}" style="margin-left:auto;">${worstLabel}</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table style="border-collapse:collapse;width:100%;">
+            <thead>
+              <tr style="background:#f8fafc;">
+                <th style="padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;">Task</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;">Interval</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;">Last Serviced</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;">Current OH</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;">Next Due</th>
+                <th style="padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;min-width:200px;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('maint-schedule-panels').innerHTML = panels;
   renderMaintHistory(data.history || getDemoMaintHistory());
 }
 
@@ -1370,12 +1465,11 @@ function renderMaintHistory(rows) {
       <td>${r.task}</td>
       <td>${r.oh_at_service}</td>
       <td>${r.next_due_oh}</td>
-      <td style="color:var(--muted)">${r.hours_until_due !== undefined ? r.hours_until_due + ' hrs' : '—'}</td>
       <td>${r.technician || '—'}</td>
       <td style="color:var(--muted);font-size:11px">${r.notes || ''}</td>
     </tr>`;
   }
-  document.getElementById('maint-hist-body').innerHTML = tbody || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">No maintenance records found</td></tr>';
+  document.getElementById('maint-hist-body').innerHTML = tbody || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">No maintenance records found</td></tr>';
 }
 
 function filterMaintHistory() {
@@ -1395,15 +1489,64 @@ async function loadConfig() {
     data = { operators: getDemoOperators() };
   }
 
-  const ops = data.operators || [];
-  let tbody = '';
-  ops.forEach((o, i) => {
-    tbody += `<tr><td>${i+1}</td><td>${o.name}</td><td>${o.role}</td><td>${o.gen_access || 'All'}</td></tr>`;
-  });
-  document.getElementById('ops-body').innerHTML = tbody || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">No operators configured</td></tr>';
+  operatorList = data.operators || [];
+  renderOperators(operatorList);
 
   document.getElementById('config-loading').style.display = 'none';
   document.getElementById('config-content').style.display = 'block';
+}
+
+function renderOperators(ops) {
+  let tbody = '';
+  ops.forEach((o, i) => {
+    tbody += `<tr>
+      <td>${i+1}</td>
+      <td>${o.name}</td>
+      <td>${o.role}</td>
+      <td>${o.gen_access || 'All'}</td>
+      <td><button class="btn-secondary" style="padding:4px 12px;font-size:11px;color:var(--red);border-color:#fca5a5;" onclick="removeOperator(${i})">Remove</button></td>
+    </tr>`;
+  });
+  document.getElementById('ops-body').innerHTML = tbody || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No operators added yet</td></tr>';
+}
+
+// In-memory operator list (syncs to sheet via GAS on add/remove)
+let operatorList = [];
+
+async function addOperator() {
+  const name   = document.getElementById('new-op-name').value.trim();
+  const role   = document.getElementById('new-op-role').value.trim();
+  const access = document.getElementById('new-op-access').value;
+  if (!name) { showToast('Please enter the operator name.', 'error'); return; }
+  if (!role) { showToast('Please enter a role or title.', 'error'); return; }
+
+  const newOp = { name, role, gen_access: access };
+  operatorList.push(newOp);
+  renderOperators(operatorList);
+
+  document.getElementById('new-op-name').value = '';
+  document.getElementById('new-op-role').value = '';
+
+  try {
+    await apiCall({ action: 'addOperator', operator: newOp });
+    showToast(`${name} added as operator.`, 'success');
+  } catch(e) {
+    showToast(`${name} added (will sync on next save).`, 'success');
+  }
+}
+
+async function removeOperator(index) {
+  const op = operatorList[index];
+  if (!confirm(`Remove ${op.name} from operators?`)) return;
+  operatorList.splice(index, 1);
+  renderOperators(operatorList);
+
+  try {
+    await apiCall({ action: 'removeOperator', name: op.name });
+    showToast(`${op.name} removed.`, 'success');
+  } catch(e) {
+    showToast(`${op.name} removed locally.`, 'success');
+  }
 }
 
 async function saveConfig(gen, task, inputId) {
@@ -1499,9 +1642,8 @@ function getDemoMaintHistory() {
 }
 function getDemoOperators() {
   return [
-    { name: 'Engr Bilal Tariq', role: 'SNR Technical Manager', gen_access: 'All' },
-    { name: 'Martin Schultz', role: 'General Manager', gen_access: 'All' },
     { name: 'Operator A', role: 'Generator Operator', gen_access: 'All' },
+    { name: 'Operator B', role: 'Generator Operator', gen_access: 'All' },
   ];
 }
 </script>
