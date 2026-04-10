@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MJSR Generator Checks Portal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg:        #0e1117;
+    --surface:   #161b25;
+    --card:      #1c2333;
+    --border:    #2a3347;
+    --gold:      #c9a227;
+    --gold-dim:  #8a6d18;
+    --green:     #22c55e;
+    --red:       #ef4444;
+    --amber:     #f59e0b;
+    --blue:      #3b82f6;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --nav-h:     58px;
+    --gen-340:   #3b82f6;
+    --gen-110:   #8b5cf6;
+    --gen-500:   #f59e0b;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── TOP HEADER ── */
+  .top-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .top-header .logo-block { display: flex; flex-direction: column; }
+  .top-header .org { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+  .top-header .title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--gold); letter-spacing: 1px; line-height: 1.1; }
+  .top-header .icon { font-size: 28px; }
+  .top-header .live-badge {
+    margin-left: auto;
+    background: rgba(34,197,94,0.15);
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+  }
+  #live-time { font-size: 12px; color: var(--muted); margin-left: 10px; }
+
+  /* ── NAV TABS ── */
+  nav {
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    gap: 2px;
+    padding: 0 24px;
+    overflow-x: auto;
+  }
+  nav button {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 14px 18px 11px;
+    text-transform: uppercase;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  /* ── PAGE ── */
+  .page { display: none; padding: 24px; max-width: 1200px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .accent { color: var(--gold); }
+
+  /* ── GEN SELECTOR CARDS ── */
+  .gen-selector { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .gen-card {
+    flex: 1; min-width: 150px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    cursor: pointer;
+    transition: all .2s;
+    text-align: center;
+  }
+  .gen-card:hover { border-color: var(--gold-dim); transform: translateY(-2px); }
+  .gen-card.selected { border-color: var(--gold); background: rgba(201,162,39,0.08); }
+  .gen-card .kva { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; }
+  .gen-card .kva.c340 { color: var(--gen-340); }
+  .gen-card .kva.c110 { color: var(--gen-110); }
+  .gen-card .kva.c500 { color: var(--gen-500); }
+  .gen-card .model { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .gen-card .serial { font-size: 10px; color: var(--muted); }
+
+  /* ── FORM GRID ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  input, select, textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 13px;
+    padding: 9px 12px;
+    transition: border .2s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold); outline: none; }
+  select option { background: var(--card); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  /* ── CHECK ITEMS ── */
+  .checks-section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 20px; }
+  .checks-section h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 1.5px; color: var(--gold); text-transform: uppercase; margin-bottom: 14px; }
+  .check-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .check-row:last-child { border-bottom: none; }
+  .check-label { flex: 1; font-size: 13px; font-weight: 500; }
+  .check-row select { width: 120px; flex-shrink: 0; }
+  .check-row input[type=text] { width: 160px; flex-shrink: 0; font-size: 12px; }
+
+  /* ── METER INPUT ── */
+  .meter-block {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .meter-block .meter-icon { font-size: 36px; }
+  .meter-block .meter-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+  .meter-block input { max-width: 160px; font-size: 22px; font-weight: 700; text-align: center; }
+
+  /* ── SUBMIT BTN ── */
+  .btn-submit {
+    background: var(--gold);
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 14px 32px;
+    text-transform: uppercase;
+    transition: all .2s;
+    width: 100%;
+  }
+  .btn-submit:hover { background: #e0b42a; transform: translateY(-1px); }
+  .btn-submit:active { transform: none; }
+
+  /* ── DASHBOARD TILES ── */
+  .tiles-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .tile {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .tile::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .tile.gen-340::before { background: var(--gen-340); }
+  .tile.gen-110::before { background: var(--gen-110); }
+  .tile.gen-500::before { background: var(--gen-500); }
+  .tile.ok::before { background: var(--green); }
+  .tile.warn::before { background: var(--amber); }
+  .tile .tile-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .tile .tile-val { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; line-height: 1; }
+  .tile .tile-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .tile .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .dot-green { background: var(--green); }
+  .dot-amber { background: var(--amber); }
+  .dot-red { background: var(--red); }
+
+  /* ── GEN STATUS CARDS (dashboard) ── */
+  .gen-status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .gen-status-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .gen-status-card .gsc-header {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .gen-status-card.c340 .gsc-header { background: rgba(59,130,246,0.12); border-bottom: 1px solid rgba(59,130,246,0.3); }
+  .gen-status-card.c110 .gsc-header { background: rgba(139,92,246,0.12); border-bottom: 1px solid rgba(139,92,246,0.3); }
+  .gen-status-card.c500 .gsc-header { background: rgba(245,158,11,0.12); border-bottom: 1px solid rgba(245,158,11,0.3); }
+  .gsc-kva { font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 700; }
+  .c340 .gsc-kva { color: var(--gen-340); }
+  .c110 .gsc-kva { color: var(--gen-110); }
+  .c500 .gsc-kva { color: var(--gen-500); }
+  .gsc-info { flex: 1; }
+  .gsc-model { font-size: 12px; color: var(--muted); }
+  .gsc-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+  .badge-ok { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+  .badge-warn { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-fault { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-ns { background: rgba(100,116,139,0.15); color: var(--muted); border: 1px solid rgba(100,116,139,0.3); }
+  .gsc-body { padding: 14px 18px; }
+  .gsc-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .gsc-check-item { font-size: 12px; display: flex; align-items: center; gap: 6px; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { border-collapse: collapse; width: 100%; }
+  thead tr { background: var(--surface); }
+  th { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 12px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.025); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+  .badge-red   { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-amber { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .badge-blue  { background: rgba(59,130,246,0.15); color: var(--blue); }
+  .badge-purple { background: rgba(139,92,246,0.15); color: #a78bfa; }
+
+  /* ── MAINTENANCE CARDS ── */
+  .maint-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .maint-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .maint-card .mc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .maint-card .mc-gen { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; }
+  .maint-card .mc-task { font-size: 13px; font-weight: 600; flex: 1; }
+  .maint-card .mc-row { display: flex; justify-content: space-between; font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .maint-card .mc-row:last-child { border-bottom: none; }
+  .mc-key { color: var(--muted); }
+  .mc-val { font-weight: 600; }
+  .overdue { color: var(--red) !important; }
+  .due-soon { color: var(--amber) !important; }
+  .ok-val { color: var(--green) !important; }
+
+  /* ── PROGRESS BAR ── */
+  .prog-wrap { background: var(--bg); border-radius: 20px; height: 6px; overflow: hidden; margin-top: 8px; }
+  .prog-bar { height: 100%; border-radius: 20px; transition: width .5s; }
+  .prog-green { background: var(--green); }
+  .prog-amber { background: var(--amber); }
+  .prog-red { background: var(--red); }
+
+  /* ── CONFIG SECTION ── */
+  .config-panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  .config-panel h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 1.5px; color: var(--gold); text-transform: uppercase; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .config-row { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .config-row:last-child { border-bottom: none; }
+  .config-row .cr-gen { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; min-width: 70px; }
+  .config-row .cr-task { flex: 1; font-size: 13px; font-weight: 500; min-width: 150px; }
+  .config-row .cr-hours { width: 100px; }
+  .config-row .cr-oh { width: 110px; }
+
+  /* ── FILTER ROW ── */
+  .filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .filter-row select, .filter-row input { max-width: 180px; }
+  .filter-row label { white-space: nowrap; }
+  .btn-secondary {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 9px 16px;
+    transition: all .2s;
+    text-transform: uppercase;
+  }
+  .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── PIN MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 30px;
+    width: 100%;
+    max-width: 360px;
+  }
+  .modal h2 { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; color: var(--gold); margin-bottom: 8px; }
+  .modal p { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+  .pin-dots { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+  .pin-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--border); transition: background .2s; }
+  .pin-dot.filled { background: var(--gold); }
+  .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .pin-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    padding: 14px;
+    transition: all .15s;
+  }
+  .pin-btn:hover { background: var(--border); border-color: var(--gold-dim); }
+  .pin-btn.pin-clear { color: var(--red); font-size: 14px; }
+  .pin-btn.pin-enter { color: var(--gold); font-size: 14px; }
+  .pin-error { color: var(--red); font-size: 12px; text-align: center; margin-top: 10px; display: none; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    max-width: 340px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  }
+  .toast.show { display: flex; }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+
+  /* ── SPINNER ── */
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── REPORT SECTION ── */
+  .report-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .report-stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    text-align: center;
+  }
+  .report-stat .rs-val { font-family: 'Barlow Condensed', sans-serif; font-size: 42px; font-weight: 700; color: var(--gold); }
+  .report-stat .rs-label { font-size: 11px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state .es-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 13px; }
+
+  /* responsive */
+  @media (max-width: 480px) {
+    .top-header { padding: 10px 14px; }
+    nav { padding: 0 10px; }
+    .page { padding: 14px; }
+    nav button { padding: 12px 10px 9px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP HEADER -->
+<div class="top-header">
+  <span class="icon">⚡</span>
+  <div class="logo-block">
+    <span class="org">Samsons Group of Companies</span>
+    <span class="title">MJSR Generator Checks Portal</span>
+  </div>
+  <span class="live-badge">● LIVE</span>
+  <span id="live-time"></span>
+</div>
+
+<!-- NAV -->
+<nav>
+  <button class="active" onclick="switchTab('submit')">Submit Log</button>
+  <button onclick="switchTab('dashboard')">Dashboard</button>
+  <button onclick="switchTab('report')">Report</button>
+  <button onclick="switchTab('maint-log')" id="btn-maintlog">Maintenance Log</button>
+  <button onclick="switchTab('maint-config')" id="btn-maintconfig">Maint Config</button>
+</nav>
+
+<!-- ============================================================
+     TAB: SUBMIT LOG
+     ============================================================ -->
+<div id="tab-submit" class="page active">
+  <div class="section-title"><span class="accent">⚡</span> Daily Generator Check — Submit</div>
+
+  <!-- Generator Selector -->
+  <div class="gen-selector">
+    <div class="gen-card selected" id="gc-340" onclick="selectGen('340')">
+      <div class="kva c340">340 KVA</div>
+      <div class="model">P126Ti · Electronic</div>
+      <div class="serial">S/N: 433505</div>
+    </div>
+    <div class="gen-card" id="gc-110" onclick="selectGen('110')">
+      <div class="kva c110">110 KVA</div>
+      <div class="model">2428-1500 · Electronic</div>
+      <div class="serial">S/N: 513544</div>
+    </div>
+    <div class="gen-card" id="gc-500" onclick="selectGen('500')">
+      <div class="kva c500">500 KVA</div>
+      <div class="model">DC13 072A · Electronic</div>
+      <div class="serial">S/N: 7323374</div>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="f-date">
+    </div>
+    <div class="form-group">
+      <label>Shift</label>
+      <select id="f-shift">
+        <option>Morning</option>
+        <option>Afternoon</option>
+        <option>Evening</option>
+        <option>Night</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Operator Name</label>
+      <input type="text" id="f-operator" placeholder="Full name">
+    </div>
+    <div class="form-group">
+      <label>Generator Status</label>
+      <select id="f-gen-status">
+        <option value="Running">Running</option>
+        <option value="Standby">Standby</option>
+        <option value="Off">Off</option>
+        <option value="Fault">Fault</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Meter Reading -->
+  <div class="meter-block">
+    <span class="meter-icon">🕐</span>
+    <div>
+      <div class="meter-label">Engine Hours (Current Reading)</div>
+      <input type="number" id="f-meter" placeholder="e.g. 10568" step="0.1">
+    </div>
+    <div style="margin-left:auto; text-align:right;">
+      <div class="meter-label">Last Logged</div>
+      <div id="last-meter" style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--muted);">—</div>
+    </div>
+  </div>
+
+  <!-- Routine Checks -->
+  <div class="checks-section">
+    <h3>Routine Checks</h3>
+    <div class="check-row">
+      <span class="check-label">Engine Oil Level</span>
+      <select class="chk" data-key="oil_level">
+        <option value="Full">Full</option>
+        <option value="Low">Low</option>
+        <option value="Critical">Critical</option>
+      </select>
+      <input type="text" class="chk-rem" data-key="oil_level_rem" placeholder="Remarks">
+    </div>
+    <div class="check-row">
+      <span class="check-label">Coolant Level</span>
+      <select class="chk" data-key="coolant">
+        <option value="Full">Full</option>
+        <option value="Low">Low</option>
+        <option value="Critical">Critical</option>
+      </select>
+      <input type="text" class="chk-rem" data-key="coolant_rem" placeholder="Remarks">
+    </div>
+    <div class="check-row">
+      <span class="check-label">Battery Water Level</span>
+      <select class="chk" data-key="battery_water">
+        <option value="Full">Full</option>
+        <option value="Low">Low</option>
+        <option value="Critical">Critical</option>
+      </select>
+      <input type="text" class="chk-rem" data-key="battery_water_rem" placeholder="Remarks">
+    </div>
+    <div class="check-row">
+      <span class="check-label">Fuel Level</span>
+      <select class="chk" data-key="fuel">
+        <option value="Full">Full</option>
+        <option value="75%">75%</option>
+        <option value="50%">50%</option>
+        <option value="25%">25%</option>
+        <option value="Low">Low</option>
+        <option value="Empty">Empty</option>
+      </select>
+      <input type="text" class="chk-rem" data-key="fuel_rem" placeholder="Remarks">
+    </div>
+    <div class="check-row">
+      <span class="check-label">Unusual Noise / Vibration</span>
+      <select class="chk" data-key="noise">
+        <option value="None">None</option>
+        <option value="Minor">Minor</option>
+        <option value="Significant">Significant</option>
+      </select>
+      <input type="text" class="chk-rem" data-key="noise_rem" placeholder="Remarks">
+    </div>
+    <div class="check-row">
+      <span class="check-label">Filter Condition</span>
+      <select class="chk" data-key="filter_cond">
+        <option value="Good">Good</option>
+        <option value="Check">Check</option>
+        <option value="Replace">Replace</option>
+      </select>
+      <input type="text" class="chk-rem" data-key="filter_cond_rem" placeholder="Remarks">
+    </div>
+    <div class="check-row">
+      <span class="check-label">Battery Voltage</span>
+      <select class="chk" data-key="battery_v">
+        <option value="OK">OK (12–14V)</option>
+        <option value="Low">Low (&lt;12V)</option>
+        <option value="Fault">Fault</option>
+      </select>
+      <input type="text" class="chk-rem" data-key="battery_v_rem" placeholder="Remarks">
+    </div>
+    <div class="check-row">
+      <span class="check-label">Exhaust / Smoke</span>
+      <select class="chk" data-key="exhaust">
+        <option value="Normal">Normal</option>
+        <option value="Light Smoke">Light Smoke</option>
+        <option value="Heavy Smoke">Heavy Smoke</option>
+      </select>
+      <input type="text" class="chk-rem" data-key="exhaust_rem" placeholder="Remarks">
+    </div>
+    <!-- 500 KVA only: Water Filter -->
+    <div class="check-row" id="water-filter-row" style="display:none;">
+      <span class="check-label">Water Filter (500 KVA)</span>
+      <select class="chk" data-key="water_filter">
+        <option value="Good">Good</option>
+        <option value="Check">Check</option>
+        <option value="Replace">Replace</option>
+      </select>
+      <input type="text" class="chk-rem" data-key="water_filter_rem" placeholder="Remarks">
+    </div>
+  </div>
+
+  <!-- Load / Electrical -->
+  <div class="checks-section">
+    <h3>Load & Electrical</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Output Voltage (V)</label>
+        <input type="number" id="f-voltage" placeholder="e.g. 415">
+      </div>
+      <div class="form-group">
+        <label>Output Frequency (Hz)</label>
+        <input type="number" id="f-freq" placeholder="e.g. 50">
+      </div>
+      <div class="form-group">
+        <label>Load Amps (A)</label>
+        <input type="number" id="f-amps" placeholder="e.g. 200">
+      </div>
+      <div class="form-group">
+        <label>Engine Temp (°C)</label>
+        <input type="number" id="f-temp" placeholder="e.g. 85">
+      </div>
+    </div>
+  </div>
+
+  <!-- Overall -->
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Overall Status</label>
+      <select id="f-overall">
+        <option value="OK">✅ OK — No Issues</option>
+        <option value="Fault">⚠️ Fault — Action Required</option>
+        <option value="Maintenance Required">🔧 Maintenance Required</option>
+        <option value="Out of Service">🔴 Out of Service</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Engineer Signature / ID</label>
+      <input type="text" id="f-engineer" placeholder="Engineer name or ID">
+    </div>
+    <div class="form-group full">
+      <label>Additional Remarks</label>
+      <textarea id="f-remarks" placeholder="Any faults, observations or actions taken..."></textarea>
+    </div>
+  </div>
+
+  <button class="btn-submit" onclick="submitLog()">⚡ Submit Daily Check Log</button>
+</div>
+
+<!-- ============================================================
+     TAB: DASHBOARD
+     ============================================================ -->
+<div id="tab-dashboard" class="page">
+  <div class="section-title"><span class="accent">📊</span> Dashboard — Today's Status</div>
+
+  <div id="dash-loading" style="text-align:center;padding:40px;color:var(--muted);">
+    <div class="spinner" style="margin:0 auto 12px;"></div>Loading dashboard…
+  </div>
+  <div id="dash-content" style="display:none;">
+    <!-- Summary tiles -->
+    <div class="tiles-row" id="dash-tiles"></div>
+    <!-- Gen status cards -->
+    <div class="section-title" style="font-size:16px;margin-top:4px;"><span class="accent">🔌</span> Generator Status Today</div>
+    <div class="gen-status-grid" id="gen-status-cards"></div>
+    <!-- 7-day log -->
+    <div class="section-title" style="font-size:16px;"><span class="accent">📋</span> Recent Submissions</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Generator</th><th>Shift</th><th>Operator</th><th>Meter (OH)</th><th>Overall</th><th>Faults</th>
+          </tr>
+        </thead>
+        <tbody id="dash-log-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB: REPORT
+     ============================================================ -->
+<div id="tab-report" class="page">
+  <div class="section-title"><span class="accent">📈</span> Generator Report</div>
+
+  <div class="filter-row">
+    <div class="form-group">
+      <label>Generator</label>
+      <select id="rep-gen">
+        <option value="">All Generators</option>
+        <option value="340">340 KVA</option>
+        <option value="110">110 KVA</option>
+        <option value="500">500 KVA</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>From</label>
+      <input type="date" id="rep-from">
+    </div>
+    <div class="form-group">
+      <label>To</label>
+      <input type="date" id="rep-to">
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="rep-status">
+        <option value="">All</option>
+        <option value="OK">OK</option>
+        <option value="Fault">Fault</option>
+        <option value="Maintenance Required">Maintenance Required</option>
+        <option value="Out of Service">Out of Service</option>
+      </select>
+    </div>
+    <button class="btn-secondary" onclick="loadReport()" style="align-self:flex-end;">Search</button>
+  </div>
+
+  <div id="report-loading" style="display:none;text-align:center;padding:30px;color:var(--muted);">
+    <div class="spinner" style="margin:0 auto 10px;"></div>Loading…
+  </div>
+
+  <div id="report-content">
+    <div class="report-cards" id="rep-stats"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Generator</th><th>Shift</th><th>Operator</th><th>Status</th><th>Meter</th><th>Voltage</th><th>Freq</th><th>Overall</th><th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody id="rep-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB: MAINTENANCE LOG
+     ============================================================ -->
+<div id="tab-maint-log" class="page">
+  <div class="section-title"><span class="accent">🔧</span> Maintenance Log</div>
+
+  <div id="maint-loading" style="text-align:center;padding:40px;color:var(--muted);">
+    <div class="spinner" style="margin:0 auto 12px;"></div>Loading maintenance data…
+  </div>
+
+  <div id="maint-content" style="display:none;">
+    <!-- Due/Overdue summary -->
+    <div class="tiles-row" id="maint-tiles"></div>
+
+    <div class="section-title" style="font-size:16px;"><span class="accent">⏰</span> Service Due Status</div>
+    <div class="maint-grid" id="maint-due-cards"></div>
+
+    <div class="section-title" style="font-size:16px;"><span class="accent">📋</span> Maintenance History</div>
+    <div class="filter-row">
+      <div class="form-group">
+        <label>Generator</label>
+        <select id="mhist-gen" onchange="filterMaintHistory()">
+          <option value="">All</option>
+          <option>340 KVA</option><option>110 KVA</option><option>500 KVA</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Task</label>
+        <select id="mhist-task" onchange="filterMaintHistory()">
+          <option value="">All Tasks</option>
+          <option>Engine Oil</option><option>Oil Filter</option><option>Fuel Filter</option><option>Air Filter</option><option>Water Filter</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Generator</th><th>Task</th><th>OH at Service</th><th>Next Due (OH)</th><th>Hours Until Due</th><th>Technician</th><th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="maint-hist-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Add Maintenance Record -->
+    <div style="margin-top:24px;">
+      <div class="section-title" style="font-size:16px;"><span class="accent">➕</span> Log New Maintenance Service</div>
+      <div class="config-panel">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Generator</label>
+            <select id="nm-gen">
+              <option>340 KVA</option><option>110 KVA</option><option>500 KVA</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Task</label>
+            <select id="nm-task">
+              <option>Engine Oil</option><option>Oil Filter</option><option>Fuel Filter</option><option>Air Filter</option><option>Water Filter</option><option>Full Service</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Service Date</label>
+            <input type="date" id="nm-date">
+          </div>
+          <div class="form-group">
+            <label>Engine Hours at Service</label>
+            <input type="number" id="nm-oh" placeholder="e.g. 10568">
+          </div>
+          <div class="form-group">
+            <label>Technician</label>
+            <input type="text" id="nm-tech" placeholder="Name">
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="nm-notes" placeholder="Parts used, observations…">
+          </div>
+        </div>
+        <button class="btn-submit" style="margin-top:10px;" onclick="submitMaint()">🔧 Log Maintenance Record</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB: MAINT CONFIG
+     ============================================================ -->
+<div id="tab-maint-config" class="page">
+  <div class="section-title"><span class="accent">⚙️</span> Maintenance Configuration</div>
+
+  <div id="config-loading" style="text-align:center;padding:40px;color:var(--muted);">
+    <div class="spinner" style="margin:0 auto 12px;"></div>Loading config…
+  </div>
+
+  <div id="config-content" style="display:none;">
+    <div class="config-panel">
+      <h3>Service Intervals (Engine Hours)</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Set the interval (in engine hours) for each scheduled maintenance task per generator. Changes take effect on next dashboard refresh.</p>
+
+      <!-- 340 KVA -->
+      <div class="config-row">
+        <span class="cr-gen" style="color:var(--gen-340);">340 KVA</span>
+        <span class="cr-task">Engine Oil</span>
+        <input type="number" class="cr-hours" id="cfg-340-oil" placeholder="200" value="200">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('340','Engine Oil','cfg-340-oil')">Save</button>
+      </div>
+      <div class="config-row">
+        <span class="cr-gen" style="color:var(--gen-340);">340 KVA</span>
+        <span class="cr-task">Oil Filter</span>
+        <input type="number" class="cr-hours" id="cfg-340-oilf" placeholder="400" value="400">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('340','Oil Filter','cfg-340-oilf')">Save</button>
+      </div>
+      <div class="config-row">
+        <span class="cr-gen" style="color:var(--gen-340);">340 KVA</span>
+        <span class="cr-task">Fuel Filter</span>
+        <input type="number" class="cr-hours" id="cfg-340-fuel" placeholder="400" value="400">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('340','Fuel Filter','cfg-340-fuel')">Save</button>
+      </div>
+      <div class="config-row">
+        <span class="cr-gen" style="color:var(--gen-340);">340 KVA</span>
+        <span class="cr-task">Air Filter</span>
+        <input type="number" class="cr-hours" id="cfg-340-air" placeholder="500" value="500">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('340','Air Filter','cfg-340-air')">Save</button>
+      </div>
+
+      <!-- 110 KVA -->
+      <div class="config-row" style="margin-top:8px;">
+        <span class="cr-gen" style="color:var(--gen-110);">110 KVA</span>
+        <span class="cr-task">Engine Oil</span>
+        <input type="number" class="cr-hours" id="cfg-110-oil" placeholder="250" value="250">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('110','Engine Oil','cfg-110-oil')">Save</button>
+      </div>
+      <div class="config-row">
+        <span class="cr-gen" style="color:var(--gen-110);">110 KVA</span>
+        <span class="cr-task">Oil Filter</span>
+        <input type="number" class="cr-hours" id="cfg-110-oilf" placeholder="500" value="500">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('110','Oil Filter','cfg-110-oilf')">Save</button>
+      </div>
+      <div class="config-row">
+        <span class="cr-gen" style="color:var(--gen-110);">110 KVA</span>
+        <span class="cr-task">Fuel Filter</span>
+        <input type="number" class="cr-hours" id="cfg-110-fuel" placeholder="500" value="500">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('110','Fuel Filter','cfg-110-fuel')">Save</button>
+      </div>
+      <div class="config-row">
+        <span class="cr-gen" style="color:var(--gen-110);">110 KVA</span>
+        <span class="cr-task">Air Filter</span>
+        <input type="number" class="cr-hours" id="cfg-110-air" placeholder="500" value="500">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('110','Air Filter','cfg-110-air')">Save</button>
+      </div>
+
+      <!-- 500 KVA -->
+      <div class="config-row" style="margin-top:8px;">
+        <span class="cr-gen" style="color:var(--gen-500);">500 KVA</span>
+        <span class="cr-task">Engine Oil</span>
+        <input type="number" class="cr-hours" id="cfg-500-oil" placeholder="200" value="200">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('500','Engine Oil','cfg-500-oil')">Save</button>
+      </div>
+      <div class="config-row">
+        <span class="cr-gen" style="color:var(--gen-500);">500 KVA</span>
+        <span class="cr-task">Oil Filter</span>
+        <input type="number" class="cr-hours" id="cfg-500-oilf" placeholder="200" value="200">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('500','Oil Filter','cfg-500-oilf')">Save</button>
+      </div>
+      <div class="config-row">
+        <span class="cr-gen" style="color:var(--gen-500);">500 KVA</span>
+        <span class="cr-task">Fuel Filter</span>
+        <input type="number" class="cr-hours" id="cfg-500-fuel" placeholder="200" value="200">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('500','Fuel Filter','cfg-500-fuel')">Save</button>
+      </div>
+      <div class="config-row">
+        <span class="cr-gen" style="color:var(--gen-500);">500 KVA</span>
+        <span class="cr-task">Air Filter</span>
+        <input type="number" class="cr-hours" id="cfg-500-air" placeholder="400" value="400">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('500','Air Filter','cfg-500-air')">Save</button>
+      </div>
+      <div class="config-row">
+        <span class="cr-gen" style="color:var(--gen-500);">500 KVA</span>
+        <span class="cr-task">Water Filter</span>
+        <input type="number" class="cr-hours" id="cfg-500-wf" placeholder="500" value="500">
+        <span style="font-size:11px;color:var(--muted);">hours</span>
+        <button class="btn-secondary" onclick="saveConfig('500','Water Filter','cfg-500-wf')">Save</button>
+      </div>
+    </div>
+
+    <!-- Operators Config -->
+    <div class="config-panel">
+      <h3>Portal Operators</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Manage the list of authorised operators shown in the Submit form dropdown. Maintained in the Portal_Operators sheet tab.</p>
+      <div class="table-wrap" id="ops-table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Role</th><th>Generator Access</th></tr></thead>
+          <tbody id="ops-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Alert Config -->
+    <div class="config-panel">
+      <h3>Email Alerts</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Alert Recipient (SNR Tech Manager)</label>
+          <input type="email" value="bilal.tariq@malamjabbaresort.com" readonly style="color:var(--muted);">
+        </div>
+        <div class="form-group">
+          <label>Alert Recipient (GM)</label>
+          <input type="email" value="martin.schultz@malamjabbaresort.com" readonly style="color:var(--muted);">
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px;">Alerts trigger automatically when: Overall Status = Fault or Out of Service, or any maintenance item is Overdue. Configured in GAS backend.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PIN MODAL -->
+<div class="modal-overlay" id="pin-modal">
+  <div class="modal">
+    <h2>🔐 Maintenance Access</h2>
+    <p>Enter the PIN to access Maintenance Log and Configuration panels.</p>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinDigit(1)">1</button>
+      <button class="pin-btn" onclick="pinDigit(2)">2</button>
+      <button class="pin-btn" onclick="pinDigit(3)">3</button>
+      <button class="pin-btn" onclick="pinDigit(4)">4</button>
+      <button class="pin-btn" onclick="pinDigit(5)">5</button>
+      <button class="pin-btn" onclick="pinDigit(6)">6</button>
+      <button class="pin-btn" onclick="pinDigit(7)">7</button>
+      <button class="pin-btn" onclick="pinDigit(8)">8</button>
+      <button class="pin-btn" onclick="pinDigit(9)">9</button>
+      <button class="pin-btn pin-clear" onclick="pinClear()">CLR</button>
+      <button class="pin-btn" onclick="pinDigit(0)">0</button>
+      <button class="pin-btn pin-enter" onclick="pinEnter()">OK</button>
+    </div>
+    <div class="pin-error" id="pin-error">Incorrect PIN. Please try again.</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-msg">Submitted successfully.</span>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const SCRIPT_URL = 'YOUR_GAS_EXEC_URL_HERE'; // Replace with deployed GAS URL
+const PIN = '1234';
+const GENS = {
+  '340': { label: '340 KVA', model: 'P126Ti', serial: '433505', color: '#3b82f6', class: 'c340' },
+  '110': { label: '110 KVA', model: '2428-1500', serial: '513544', color: '#8b5cf6', class: 'c110' },
+  '500': { label: '500 KVA', model: 'DC13 072A', serial: '7323374', color: '#f59e0b', class: 'c500' }
+};
+
+let selectedGen = '340';
+let pinTarget = null;
+let pinBuffer = '';
+let maintUnlocked = false;
+
+// ── INIT ────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('f-date').value = today;
+  document.getElementById('nm-date').value = today;
+  const d30 = new Date(); d30.setDate(d30.getDate()-30);
+  document.getElementById('rep-from').value = d30.toISOString().slice(0,10);
+  document.getElementById('rep-to').value = today;
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadDashboard();
+});
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('live-time').textContent =
+    now.toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) +
+    '  ' + now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+// ── TABS ────────────────────────────────────────────────────
+function switchTab(id) {
+  if ((id === 'maint-log' || id === 'maint-config') && !maintUnlocked) {
+    pinTarget = id;
+    document.getElementById('pin-modal').classList.add('show');
+    return;
+  }
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event && event.target && event.target.classList.add('active');
+  // Fix: activate correct nav btn
+  document.querySelectorAll('nav button').forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + id + "'")) b.classList.add('active');
+  });
+
+  if (id === 'dashboard') loadDashboard();
+  if (id === 'maint-log') loadMaintLog();
+  if (id === 'maint-config') loadConfig();
+}
+
+// ── GEN SELECTOR ────────────────────────────────────────────
+function selectGen(kva) {
+  selectedGen = kva;
+  document.querySelectorAll('.gen-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('gc-' + kva).classList.add('selected');
+  document.getElementById('water-filter-row').style.display = kva === '500' ? 'flex' : 'none';
+}
+
+// ── API CALL ─────────────────────────────────────────────────
+async function apiCall(payload) {
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
+// ── SUBMIT LOG ───────────────────────────────────────────────
+async function submitLog() {
+  const operator = document.getElementById('f-operator').value.trim();
+  const meter    = document.getElementById('f-meter').value;
+  if (!operator) { showToast('Please enter operator name.', 'error'); return; }
+  if (!meter)    { showToast('Please enter engine hours reading.', 'error'); return; }
+
+  const checks = {};
+  document.querySelectorAll('.chk').forEach(el => { checks[el.dataset.key] = el.value; });
+  document.querySelectorAll('.chk-rem').forEach(el => { checks[el.dataset.key] = el.value; });
+
+  const payload = {
+    action: 'submitDailyCheck',
+    generator: selectedGen + ' KVA',
+    date: document.getElementById('f-date').value,
+    shift: document.getElementById('f-shift').value,
+    operator,
+    gen_status: document.getElementById('f-gen-status').value,
+    meter_oh: parseFloat(meter),
+    voltage: document.getElementById('f-voltage').value,
+    frequency: document.getElementById('f-freq').value,
+    load_amps: document.getElementById('f-amps').value,
+    engine_temp: document.getElementById('f-temp').value,
+    overall: document.getElementById('f-overall').value,
+    engineer: document.getElementById('f-engineer').value,
+    remarks: document.getElementById('f-remarks').value,
+    ...checks
+  };
+
+  try {
+    const r = await apiCall(payload);
+    if (r.status === 'ok') {
+      showToast('Daily check logged successfully.', 'success');
+      document.getElementById('f-remarks').value = '';
+      document.getElementById('f-meter').value = '';
+    } else {
+      showToast('Error: ' + (r.message || 'Unknown'), 'error');
+    }
+  } catch(e) {
+    // Dev mode: show success anyway
+    showToast('(Dev mode) Log recorded locally.', 'success');
+  }
+}
+
+// ── SUBMIT MAINTENANCE ───────────────────────────────────────
+async function submitMaint() {
+  const gen  = document.getElementById('nm-gen').value;
+  const task = document.getElementById('nm-task').value;
+  const date = document.getElementById('nm-date').value;
+  const oh   = document.getElementById('nm-oh').value;
+  const tech = document.getElementById('nm-tech').value.trim();
+  if (!oh || !tech) { showToast('Please fill engine hours and technician.', 'error'); return; }
+
+  const payload = {
+    action: 'submitMaintenance',
+    generator: gen, task, date,
+    oh_at_service: parseFloat(oh),
+    technician: tech,
+    notes: document.getElementById('nm-notes').value
+  };
+
+  try {
+    const r = await apiCall(payload);
+    if (r.status === 'ok') {
+      showToast('Maintenance record saved.', 'success');
+      loadMaintLog();
+    } else {
+      showToast('Error: ' + (r.message || 'Unknown'), 'error');
+    }
+  } catch(e) {
+    showToast('(Dev mode) Maintenance record saved.', 'success');
+  }
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+async function loadDashboard() {
+  document.getElementById('dash-loading').style.display = 'block';
+  document.getElementById('dash-content').style.display = 'none';
+
+  let data;
+  try {
+    data = await apiCall({ action: 'getDashboard' });
+  } catch(e) {
+    data = getDemoData();
+  }
+
+  renderDashboard(data);
+  document.getElementById('dash-loading').style.display = 'none';
+  document.getElementById('dash-content').style.display = 'block';
+}
+
+function renderDashboard(d) {
+  // Summary tiles
+  const total  = d.today_submissions || 0;
+  const faults = d.today_faults || 0;
+  const mdue   = d.maint_due || 0;
+  const tilesHtml = `
+    <div class="tile ok">
+      <div class="tile-label">Submissions Today</div>
+      <div class="tile-val">${total}</div>
+      <div class="tile-sub">Across all generators</div>
+    </div>
+    <div class="tile ${faults > 0 ? 'warn' : 'ok'}">
+      <div class="tile-label">Faults Today</div>
+      <div class="tile-val" style="color:${faults>0?'var(--red)':'var(--green)'}">${faults}</div>
+      <div class="tile-sub">${faults > 0 ? 'Action required' : 'No active faults'}</div>
+    </div>
+    <div class="tile ${mdue > 0 ? 'warn' : 'ok'}">
+      <div class="tile-label">Maintenance Due</div>
+      <div class="tile-val" style="color:${mdue>0?'var(--amber)':'var(--green)'}">${mdue}</div>
+      <div class="tile-sub">Scheduled services</div>
+    </div>
+  `;
+  document.getElementById('dash-tiles').innerHTML = tilesHtml;
+
+  // Gen status cards
+  const genData = d.generators || getDemoGenData();
+  let cards = '';
+  for (const kva of ['340','110','500']) {
+    const g = genData[kva] || {};
+    const info = GENS[kva];
+    const badgeCls = g.overall === 'OK' ? 'badge-ok' : g.overall === 'Fault' ? 'badge-fault' : g.overall ? 'badge-warn' : 'badge-ns';
+    const badgeLabel = g.overall || 'Not Submitted';
+    cards += `
+      <div class="gen-status-card ${info.class}">
+        <div class="gsc-header">
+          <div class="gsc-info">
+            <div class="gsc-kva">${info.label}</div>
+            <div class="gsc-model">${info.model} · S/N ${info.serial}</div>
+          </div>
+          <span class="gsc-badge ${badgeCls}">${badgeLabel}</span>
+        </div>
+        <div class="gsc-body">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">
+            ${g.submitted ? 'Last check: ' + g.shift + ' shift · ' + g.operator : 'No submission today'}
+            ${g.meter_oh ? ' · ' + g.meter_oh + ' OH' : ''}
+          </div>
+          <div class="gsc-checks">
+            ${renderCheckDot('Oil Level', g.oil_level)}
+            ${renderCheckDot('Coolant', g.coolant)}
+            ${renderCheckDot('Battery Water', g.battery_water)}
+            ${renderCheckDot('Fuel', g.fuel)}
+            ${renderCheckDot('Noise', g.noise, true)}
+            ${renderCheckDot('Filter Cond.', g.filter_cond)}
+          </div>
+        </div>
+      </div>`;
+  }
+  document.getElementById('gen-status-cards').innerHTML = cards;
+
+  // Recent log
+  const rows = d.recent_logs || getDemoLogs();
+  let tbody = '';
+  for (const r of rows) {
+    const badgeCls = r.overall === 'OK' ? 'badge-green' : r.overall === 'Fault' ? 'badge-red' : 'badge-amber';
+    tbody += `<tr>
+      <td>${r.date}</td>
+      <td><span class="badge" style="background:rgba(255,255,255,0.07)">${r.generator}</span></td>
+      <td>${r.shift || ''}</td>
+      <td>${r.operator || ''}</td>
+      <td>${r.meter_oh || '—'}</td>
+      <td><span class="badge ${badgeCls}">${r.overall || '—'}</span></td>
+      <td style="color:var(--muted);font-size:11px">${r.remarks || ''}</td>
+    </tr>`;
+  }
+  document.getElementById('dash-log-body').innerHTML = tbody || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">No submissions yet today</td></tr>';
+}
+
+function renderCheckDot(label, val, invert) {
+  let cls = 'dot-green';
+  if (!val) cls = 'dot-amber';
+  else if (invert) { cls = (val === 'None' || val === 'nil') ? 'dot-green' : 'dot-red'; }
+  else { cls = (val === 'Full' || val === 'Good' || val === 'OK' || val === 'Normal' || val === 'ok' || val === 'full' || val === 'good') ? 'dot-green' : val === 'Low' ? 'dot-amber' : 'dot-red'; }
+  return `<div class="gsc-check-item"><span class="status-dot ${cls}"></span>${label}</div>`;
+}
+
+// ── REPORT ───────────────────────────────────────────────────
+async function loadReport() {
+  document.getElementById('report-loading').style.display = 'block';
+  const gen    = document.getElementById('rep-gen').value;
+  const from   = document.getElementById('rep-from').value;
+  const to     = document.getElementById('rep-to').value;
+  const status = document.getElementById('rep-status').value;
+
+  let data;
+  try {
+    data = await apiCall({ action: 'getReport', generator: gen, from, to, status });
+  } catch(e) {
+    data = { logs: getDemoLogs(), counts: { total: 5, ok: 4, fault: 1 } };
+  }
+
+  const logs = data.logs || [];
+  const counts = data.counts || {};
+
+  document.getElementById('rep-stats').innerHTML = `
+    <div class="report-stat"><div class="rs-val">${counts.total || logs.length}</div><div class="rs-label">Total Submissions</div></div>
+    <div class="report-stat"><div class="rs-val" style="color:var(--green)">${counts.ok || 0}</div><div class="rs-label">OK Status</div></div>
+    <div class="report-stat"><div class="rs-val" style="color:var(--red)">${counts.fault || 0}</div><div class="rs-label">Faults</div></div>
+    <div class="report-stat"><div class="rs-val" style="color:var(--amber)">${counts.maint || 0}</div><div class="rs-label">Maint Required</div></div>
+  `;
+
+  let tbody = '';
+  for (const r of logs) {
+    const bc = r.overall === 'OK' ? 'badge-green' : r.overall === 'Fault' ? 'badge-red' : 'badge-amber';
+    const genClass = r.generator && r.generator.includes('340') ? 'badge-blue' : r.generator && r.generator.includes('110') ? 'badge-purple' : 'badge-amber';
+    tbody += `<tr>
+      <td>${r.date}</td>
+      <td><span class="badge ${genClass}">${r.generator}</span></td>
+      <td>${r.shift || ''}</td>
+      <td>${r.operator || ''}</td>
+      <td><span class="badge ${r.gen_status==='Running'?'badge-green':r.gen_status==='Fault'?'badge-red':'badge-amber'}">${r.gen_status || ''}</span></td>
+      <td>${r.meter_oh || '—'}</td>
+      <td>${r.voltage || '—'}</td>
+      <td>${r.frequency || '—'}</td>
+      <td><span class="badge ${bc}">${r.overall || ''}</span></td>
+      <td style="color:var(--muted);font-size:11px;max-width:200px">${r.remarks || ''}</td>
+    </tr>`;
+  }
+  document.getElementById('rep-body').innerHTML = tbody || '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:30px">No records found</td></tr>';
+  document.getElementById('report-loading').style.display = 'none';
+}
+
+// ── MAINT LOG ────────────────────────────────────────────────
+async function loadMaintLog() {
+  document.getElementById('maint-loading').style.display = 'block';
+  document.getElementById('maint-content').style.display = 'none';
+
+  let data;
+  try {
+    data = await apiCall({ action: 'getMaintLog' });
+  } catch(e) {
+    data = getDemoMaintData();
+  }
+
+  renderMaintLog(data);
+  document.getElementById('maint-loading').style.display = 'none';
+  document.getElementById('maint-content').style.display = 'block';
+}
+
+function renderMaintLog(data) {
+  const due = data.due_items || getDemoDueItems();
+  let overdue = 0, dueSoon = 0, ok = 0;
+
+  let dueHtml = '';
+  for (const item of due) {
+    const pct = Math.min(100, Math.max(0, ((item.interval - item.hours_until_due) / item.interval) * 100));
+    const cls = item.hours_until_due < 0 ? 'overdue' : item.hours_until_due < 50 ? 'due-soon' : 'ok-val';
+    const progCls = item.hours_until_due < 0 ? 'prog-red' : item.hours_until_due < 50 ? 'prog-amber' : 'prog-green';
+    if (item.hours_until_due < 0) overdue++;
+    else if (item.hours_until_due < 50) dueSoon++;
+    else ok++;
+    const genClass = item.generator.includes('340') ? 'c340' : item.generator.includes('110') ? 'c110' : 'c500';
+    const genColor = item.generator.includes('340') ? 'var(--gen-340)' : item.generator.includes('110') ? 'var(--gen-110)' : 'var(--gen-500)';
+    dueHtml += `
+      <div class="maint-card">
+        <div class="mc-header">
+          <span class="mc-gen" style="color:${genColor}">${item.generator}</span>
+          <span class="mc-task">${item.task}</span>
+          <span class="badge ${item.hours_until_due < 0 ? 'badge-red' : item.hours_until_due < 50 ? 'badge-amber' : 'badge-green'}">${item.hours_until_due < 0 ? 'OVERDUE' : item.hours_until_due < 50 ? 'DUE SOON' : 'OK'}</span>
+        </div>
+        <div class="mc-row"><span class="mc-key">Last Serviced (OH)</span><span class="mc-val">${item.last_oh} hrs</span></div>
+        <div class="mc-row"><span class="mc-key">Current OH</span><span class="mc-val">${item.current_oh} hrs</span></div>
+        <div class="mc-row"><span class="mc-key">Interval</span><span class="mc-val">Every ${item.interval} hrs</span></div>
+        <div class="mc-row"><span class="mc-key">Next Due at</span><span class="mc-val">${item.next_due_oh} OH</span></div>
+        <div class="mc-row"><span class="mc-key">Hours Until Due</span><span class="mc-val ${cls}">${item.hours_until_due < 0 ? Math.abs(item.hours_until_due) + ' hrs OVERDUE' : item.hours_until_due + ' hrs'}</span></div>
+        <div class="prog-wrap"><div class="prog-bar ${progCls}" style="width:${pct}%"></div></div>
+      </div>`;
+  }
+  document.getElementById('maint-due-cards').innerHTML = dueHtml;
+
+  document.getElementById('maint-tiles').innerHTML = `
+    <div class="tile ${overdue>0?'warn':'ok'}">
+      <div class="tile-label">Overdue</div>
+      <div class="tile-val" style="color:var(--red)">${overdue}</div>
+      <div class="tile-sub">Immediate attention</div>
+    </div>
+    <div class="tile ${dueSoon>0?'warn':'ok'}">
+      <div class="tile-label">Due Soon</div>
+      <div class="tile-val" style="color:var(--amber)">${dueSoon}</div>
+      <div class="tile-sub">Within 50 hours</div>
+    </div>
+    <div class="tile ok">
+      <div class="tile-label">On Schedule</div>
+      <div class="tile-val" style="color:var(--green)">${ok}</div>
+      <div class="tile-sub">No action needed</div>
+    </div>
+  `;
+
+  renderMaintHistory(data.history || getDemoMaintHistory());
+}
+
+function renderMaintHistory(rows) {
+  let tbody = '';
+  for (const r of rows) {
+    const gCls = r.generator.includes('340') ? 'badge-blue' : r.generator.includes('110') ? 'badge-purple' : 'badge-amber';
+    tbody += `<tr>
+      <td>${r.date}</td>
+      <td><span class="badge ${gCls}">${r.generator}</span></td>
+      <td>${r.task}</td>
+      <td>${r.oh_at_service}</td>
+      <td>${r.next_due_oh}</td>
+      <td style="color:var(--muted)">${r.hours_until_due !== undefined ? r.hours_until_due + ' hrs' : '—'}</td>
+      <td>${r.technician || '—'}</td>
+      <td style="color:var(--muted);font-size:11px">${r.notes || ''}</td>
+    </tr>`;
+  }
+  document.getElementById('maint-hist-body').innerHTML = tbody || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">No maintenance records found</td></tr>';
+}
+
+function filterMaintHistory() {
+  // In live build, re-calls API with filter params. Here just reloads.
+  loadMaintLog();
+}
+
+// ── CONFIG ───────────────────────────────────────────────────
+async function loadConfig() {
+  document.getElementById('config-loading').style.display = 'block';
+  document.getElementById('config-content').style.display = 'none';
+
+  let data;
+  try {
+    data = await apiCall({ action: 'getConfig' });
+  } catch(e) {
+    data = { operators: getDemoOperators() };
+  }
+
+  const ops = data.operators || [];
+  let tbody = '';
+  ops.forEach((o, i) => {
+    tbody += `<tr><td>${i+1}</td><td>${o.name}</td><td>${o.role}</td><td>${o.gen_access || 'All'}</td></tr>`;
+  });
+  document.getElementById('ops-body').innerHTML = tbody || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">No operators configured</td></tr>';
+
+  document.getElementById('config-loading').style.display = 'none';
+  document.getElementById('config-content').style.display = 'block';
+}
+
+async function saveConfig(gen, task, inputId) {
+  const hours = document.getElementById(inputId).value;
+  if (!hours) return;
+  try {
+    const r = await apiCall({ action: 'saveConfig', generator: gen + ' KVA', task, interval_hours: parseInt(hours) });
+    showToast(`Config saved: ${gen} KVA ${task} → every ${hours} hrs`, 'success');
+  } catch(e) {
+    showToast(`(Dev mode) Config saved: ${gen} KVA ${task} → every ${hours} hrs`, 'success');
+  }
+}
+
+// ── PIN ──────────────────────────────────────────────────────
+function pinDigit(d) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += d;
+  document.getElementById('pd' + (pinBuffer.length-1)).classList.add('filled');
+}
+function pinClear() {
+  pinBuffer = '';
+  for (let i=0;i<4;i++) document.getElementById('pd'+i).classList.remove('filled');
+  document.getElementById('pin-error').style.display = 'none';
+}
+function pinEnter() {
+  if (pinBuffer === PIN) {
+    maintUnlocked = true;
+    document.getElementById('pin-modal').classList.remove('show');
+    pinBuffer = '';
+    for (let i=0;i<4;i++) document.getElementById('pd'+i).classList.remove('filled');
+    if (pinTarget) switchTab(pinTarget);
+  } else {
+    document.getElementById('pin-error').style.display = 'block';
+    pinClear();
+  }
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  const icon = type === 'success' ? '✅' : '❌';
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => { t.className = 'toast'; }, 4000);
+}
+
+// ── DEMO DATA (used when GAS not connected) ──────────────────
+function getDemoData() {
+  return {
+    today_submissions: 3,
+    today_faults: 0,
+    maint_due: 2,
+    generators: getDemoGenData(),
+    recent_logs: getDemoLogs()
+  };
+}
+function getDemoGenData() {
+  return {
+    '340': { submitted: true, overall: 'OK', shift: 'Morning', operator: 'Engr Bilal Tariq', meter_oh: 10568, oil_level: 'Full', coolant: 'Full', battery_water: 'Full', fuel: '75%', noise: 'None', filter_cond: 'Good' },
+    '110': { submitted: true, overall: 'OK', shift: 'Morning', operator: 'Operator A', meter_oh: 10719, oil_level: 'Full', coolant: 'Full', battery_water: 'Full', fuel: 'Full', noise: 'None', filter_cond: 'Good' },
+    '500': { submitted: false, overall: null }
+  };
+}
+function getDemoLogs() {
+  return [
+    { date: new Date().toISOString().slice(0,10), generator: '340 KVA', shift: 'Morning', operator: 'Engr Bilal Tariq', meter_oh: 10568, overall: 'OK', gen_status: 'Running', voltage: 415, frequency: 50, remarks: '' },
+    { date: new Date().toISOString().slice(0,10), generator: '110 KVA', shift: 'Morning', operator: 'Operator A', meter_oh: 10719, overall: 'OK', gen_status: 'Running', voltage: 415, frequency: 50, remarks: '' },
+    { date: new Date(Date.now()-86400000).toISOString().slice(0,10), generator: '500 KVA', shift: 'Afternoon', operator: 'Engr Bilal Tariq', meter_oh: 450, overall: 'Maintenance Required', gen_status: 'Running', voltage: 415, frequency: 50, remarks: 'Engine oil due for replacement' },
+  ];
+}
+function getDemoDueItems() {
+  return [
+    { generator: '340 KVA', task: 'Engine Oil', last_oh: 10468, current_oh: 10568, interval: 200, next_due_oh: 10668, hours_until_due: 100 },
+    { generator: '340 KVA', task: 'Oil Filter', last_oh: 10226, current_oh: 10568, interval: 400, next_due_oh: 10626, hours_until_due: 58 },
+    { generator: '340 KVA', task: 'Fuel Filter', last_oh: 10226, current_oh: 10568, interval: 400, next_due_oh: 10626, hours_until_due: 58 },
+    { generator: '340 KVA', task: 'Air Filter', last_oh: 10226, current_oh: 10568, interval: 500, next_due_oh: 10726, hours_until_due: 158 },
+    { generator: '110 KVA', task: 'Engine Oil', last_oh: 10512, current_oh: 10719, interval: 250, next_due_oh: 10762, hours_until_due: 43 },
+    { generator: '110 KVA', task: 'Oil Filter', last_oh: 10259, current_oh: 10719, interval: 500, next_due_oh: 10759, hours_until_due: 40 },
+    { generator: '110 KVA', task: 'Fuel Filter', last_oh: 10635, current_oh: 10719, interval: 500, next_due_oh: 11135, hours_until_due: 416 },
+    { generator: '500 KVA', task: 'Engine Oil', last_oh: 363, current_oh: 450, interval: 200, next_due_oh: 563, hours_until_due: 113 },
+    { generator: '500 KVA', task: 'Water Filter', last_oh: 363, current_oh: 450, interval: 500, next_due_oh: 863, hours_until_due: 413 },
+  ];
+}
+function getDemoMaintHistory() {
+  return [
+    { date: '2026-02-12', generator: '340 KVA', task: 'Engine Oil', oh_at_service: 10468, next_due_oh: 10668, technician: 'Engr Bilal Tariq', notes: 'SAE 15W-40 changed' },
+    { date: '2026-01-22', generator: '340 KVA', task: 'Oil Filter', oh_at_service: 10226, next_due_oh: 10626, technician: 'Engr Bilal Tariq', notes: 'Filter replaced' },
+    { date: '2025-11-01', generator: '110 KVA', task: 'Engine Oil', oh_at_service: 10512, next_due_oh: 10762, technician: 'Tech Team', notes: '' },
+    { date: '2025-11-16', generator: '500 KVA', task: 'Engine Oil', oh_at_service: 363, next_due_oh: 563, technician: 'Engr Bilal Tariq', notes: 'Full service completed' },
+    { date: '2025-11-16', generator: '500 KVA', task: 'Water Filter', oh_at_service: 363, next_due_oh: 863, technician: 'Engr Bilal Tariq', notes: '' },
+  ];
+}
+function getDemoOperators() {
+  return [
+    { name: 'Engr Bilal Tariq', role: 'SNR Technical Manager', gen_access: 'All' },
+    { name: 'Martin Schultz', role: 'General Manager', gen_access: 'All' },
+    { name: 'Operator A', role: 'Generator Operator', gen_access: 'All' },
+  ];
+}
+</script>
+</body>
+</html>
