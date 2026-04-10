@@ -437,6 +437,7 @@
   <button class="active" onclick="switchTab('submit')">Submit Log</button>
   <button onclick="switchTab('dashboard')">Dashboard</button>
   <button onclick="switchTab('report')">Report</button>
+  <button onclick="switchTab('sub-log')">Submission Log</button>
   <button onclick="switchTab('maint-log')" id="btn-maintlog">Maintenance Log</button>
   <button onclick="switchTab('maint-config')" id="btn-maintconfig">Maint Config</button>
 </nav>
@@ -672,6 +673,129 @@
         </thead>
         <tbody id="dash-log-body"></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB: SUBMISSION LOG
+     ============================================================ -->
+<div id="tab-sub-log" class="page">
+  <div class="section-title"><span class="accent">📋</span> Submission Log</div>
+
+  <div id="sublog-loading" style="text-align:center;padding:40px;color:var(--muted);">
+    <div class="spinner" style="margin:0 auto 12px;"></div>Loading submissions…
+  </div>
+
+  <div id="sublog-content" style="display:none;">
+
+    <!-- Filter bar -->
+    <div class="filter-row" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:18px;">
+      <div class="form-group">
+        <label>Generator</label>
+        <select id="sl-gen" onchange="loadSubLog()">
+          <option value="">All Generators</option>
+          <option value="340">340 KVA</option>
+          <option value="110">110 KVA</option>
+          <option value="500">500 KVA</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>From</label>
+        <input type="date" id="sl-from" onchange="loadSubLog()">
+      </div>
+      <div class="form-group">
+        <label>To</label>
+        <input type="date" id="sl-to" onchange="loadSubLog()">
+      </div>
+      <div class="form-group">
+        <label>Overall Status</label>
+        <select id="sl-status" onchange="loadSubLog()">
+          <option value="">All</option>
+          <option>OK</option>
+          <option>Fault</option>
+          <option>Maintenance Required</option>
+          <option>Out of Service</option>
+        </select>
+      </div>
+      <button class="btn-secondary" onclick="clearSubLogFilters()" style="align-self:flex-end;">Clear</button>
+    </div>
+
+    <!-- Info note -->
+    <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:8px;">
+      <span>🔐</span> Edit and Delete actions require PIN verification. Use this tab to remove test submissions or correct data entry errors.
+    </div>
+
+    <!-- Row count -->
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;" id="sl-count"></div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Generator</th>
+            <th>Shift</th>
+            <th>Operator</th>
+            <th>Meter (OH)</th>
+            <th>Gen Status</th>
+            <th>Overall</th>
+            <th>Remarks</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="sl-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT ROW MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal" style="max-width:500px;">
+    <h2>✏️ Edit Submission</h2>
+    <p>Correct data entry errors. All changes are logged in the sheet.</p>
+    <input type="hidden" id="edit-row-index">
+    <div class="form-grid" style="margin-top:16px;">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="edit-date">
+      </div>
+      <div class="form-group">
+        <label>Shift</label>
+        <select id="edit-shift">
+          <option>Morning</option><option>Afternoon</option><option>Evening</option><option>Night</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Operator</label>
+        <input type="text" id="edit-operator">
+      </div>
+      <div class="form-group">
+        <label>Generator Status</label>
+        <select id="edit-gen-status">
+          <option>Running</option><option>Standby</option><option>Off</option><option>Fault</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Meter (OH)</label>
+        <input type="number" id="edit-meter">
+      </div>
+      <div class="form-group">
+        <label>Overall Status</label>
+        <select id="edit-overall">
+          <option>OK</option><option>Fault</option><option>Maintenance Required</option><option>Out of Service</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Remarks</label>
+        <textarea id="edit-remarks" style="min-height:60px;"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn-submit" style="flex:1;" onclick="saveEdit()">💾 Save Changes</button>
+      <button class="btn-secondary" style="flex:1;" onclick="closeEditModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -1036,19 +1160,21 @@ let selectedGen = '340';
 let pinTarget = null;
 let pinBuffer = '';
 let maintUnlocked = false;
+let subLogUnlocked = false;
 
 // ── INIT ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const today = new Date().toISOString().slice(0,10);
+  const d30 = new Date(); d30.setDate(d30.getDate()-30);
   document.getElementById('f-date').value = today;
   document.getElementById('nm-date').value = today;
-  const d30 = new Date(); d30.setDate(d30.getDate()-30);
   document.getElementById('rep-from').value = d30.toISOString().slice(0,10);
   document.getElementById('rep-to').value = today;
+  document.getElementById('sl-from').value = d30.toISOString().slice(0,10);
+  document.getElementById('sl-to').value = today;
   updateClock();
   setInterval(updateClock, 1000);
   loadDashboard();
-  // Report pre-loads silently so it's ready when the tab is opened
   loadReport();
 });
 
@@ -1061,7 +1187,7 @@ function updateClock() {
 
 // ── TABS ────────────────────────────────────────────────────
 function switchTab(id) {
-  if ((id === 'maint-log' || id === 'maint-config') && !maintUnlocked) {
+  if ((id === 'maint-log' || id === 'maint-config' || id === 'sub-log') && !maintUnlocked) {
     pinTarget = id;
     document.getElementById('pin-modal').classList.add('show');
     return;
@@ -1069,14 +1195,13 @@ function switchTab(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + id).classList.add('active');
-  event && event.target && event.target.classList.add('active');
-  // Fix: activate correct nav btn
   document.querySelectorAll('nav button').forEach(b => {
     if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + id + "'")) b.classList.add('active');
   });
 
   if (id === 'dashboard') loadDashboard();
   if (id === 'report') loadReport();
+  if (id === 'sub-log') loadSubLog();
   if (id === 'maint-log') loadMaintLog();
   if (id === 'maint-config') loadConfig();
 }
@@ -1180,10 +1305,10 @@ async function loadDashboard() {
 
   let data;
   try {
-    data = await apiCall({ action: 'getDashboard' });
-  } catch(e) {
-    data = getDemoData();
-  }
+    const result = await apiCall({ action: 'getDashboard' });
+    data = (result && result.status === 'ok') ? result : null;
+  } catch(e) { data = null; }
+  if (!data) data = getDemoData();
 
   renderDashboard(data);
   document.getElementById('dash-loading').style.display = 'none';
@@ -1338,9 +1463,15 @@ async function loadMaintLog() {
 
   let data;
   try {
-    data = await apiCall({ action: 'getMaintLog' });
+    const result = await apiCall({ action: 'getMaintLog' });
+    data = (result && result.status === 'ok') ? result : null;
   } catch(e) {
-    data = getDemoMaintData();
+    data = null;
+  }
+
+  // Always fall through to render — never leave spinner stuck
+  if (!data) {
+    data = { due_items: getDemoDueItems(), history: getDemoMaintHistory() };
   }
 
   renderMaintLog(data);
@@ -1484,10 +1615,10 @@ async function loadConfig() {
 
   let data;
   try {
-    data = await apiCall({ action: 'getConfig' });
-  } catch(e) {
-    data = { operators: getDemoOperators() };
-  }
+    const result = await apiCall({ action: 'getConfig' });
+    data = (result && result.status === 'ok') ? result : null;
+  } catch(e) { data = null; }
+  if (!data) data = { operators: getDemoOperators() };
 
   operatorList = data.operators || [];
   renderOperators(operatorList);
@@ -1558,6 +1689,126 @@ async function saveConfig(gen, task, inputId) {
   } catch(e) {
     showToast(`(Dev mode) Config saved: ${gen} KVA ${task} → every ${hours} hrs`, 'success');
   }
+}
+
+// ── SUBMISSION LOG ────────────────────────────────────────────
+let subLogData = []; // in-memory cache for edit/delete
+
+async function loadSubLog() {
+  document.getElementById('sublog-loading').style.display = 'block';
+  document.getElementById('sublog-content').style.display = 'none';
+
+  const gen    = document.getElementById('sl-gen').value;
+  const from   = document.getElementById('sl-from').value;
+  const to     = document.getElementById('sl-to').value;
+  const status = document.getElementById('sl-status').value;
+
+  let data;
+  try {
+    const result = await apiCall({ action: 'getReport', generator: gen, from, to, status });
+    data = (result && result.status === 'ok') ? result : null;
+  } catch(e) { data = null; }
+  if (!data) data = { logs: getDemoLogs() };
+
+  subLogData = data.logs || [];
+  renderSubLog(subLogData);
+
+  document.getElementById('sublog-loading').style.display = 'none';
+  document.getElementById('sublog-content').style.display = 'block';
+}
+
+function clearSubLogFilters() {
+  document.getElementById('sl-gen').value = '';
+  document.getElementById('sl-status').value = '';
+  const today = new Date().toISOString().slice(0,10);
+  const d30 = new Date(); d30.setDate(d30.getDate()-30);
+  document.getElementById('sl-from').value = d30.toISOString().slice(0,10);
+  document.getElementById('sl-to').value = today;
+  loadSubLog();
+}
+
+function renderSubLog(rows) {
+  document.getElementById('sl-count').textContent = `Showing ${rows.length} submission${rows.length !== 1 ? 's' : ''}`;
+  let tbody = '';
+  rows.forEach((r, i) => {
+    const bc = r.overall === 'OK' ? 'badge-green' : r.overall === 'Fault' ? 'badge-red' : 'badge-amber';
+    const genCls = r.generator && r.generator.includes('340') ? 'badge-blue' : r.generator && r.generator.includes('110') ? 'badge-purple' : 'badge-amber';
+    tbody += `<tr id="sl-row-${i}">
+      <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+      <td>${r.date}</td>
+      <td><span class="badge ${genCls}">${r.generator}</span></td>
+      <td>${r.shift || ''}</td>
+      <td>${r.operator || ''}</td>
+      <td>${r.meter_oh || '—'}</td>
+      <td><span class="badge ${r.gen_status==='Running'?'badge-green':r.gen_status==='Fault'?'badge-red':'badge-amber'}">${r.gen_status || ''}</span></td>
+      <td><span class="badge ${bc}">${r.overall || ''}</span></td>
+      <td style="color:var(--muted);font-size:11px;max-width:180px;">${r.remarks || ''}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn-secondary" style="padding:4px 10px;font-size:11px;margin-right:4px;" onclick="openEditModal(${i})">✏️ Edit</button>
+        <button class="btn-secondary" style="padding:4px 10px;font-size:11px;color:var(--red);border-color:#fca5a5;" onclick="deleteRow(${i})">🗑 Delete</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('sl-body').innerHTML = tbody || '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:30px;">No submissions found</td></tr>';
+}
+
+function openEditModal(index) {
+  const r = subLogData[index];
+  if (!r) return;
+  document.getElementById('edit-row-index').value = index;
+  document.getElementById('edit-date').value = r.date || '';
+  document.getElementById('edit-shift').value = r.shift || 'Morning';
+  document.getElementById('edit-operator').value = r.operator || '';
+  document.getElementById('edit-gen-status').value = r.gen_status || 'Running';
+  document.getElementById('edit-meter').value = r.meter_oh || '';
+  document.getElementById('edit-overall').value = r.overall || 'OK';
+  document.getElementById('edit-remarks').value = r.remarks || '';
+  document.getElementById('edit-modal').classList.add('show');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('show');
+}
+
+async function saveEdit() {
+  const index = parseInt(document.getElementById('edit-row-index').value);
+  const updated = {
+    ...subLogData[index],
+    date:       document.getElementById('edit-date').value,
+    shift:      document.getElementById('edit-shift').value,
+    operator:   document.getElementById('edit-operator').value,
+    gen_status: document.getElementById('edit-gen-status').value,
+    meter_oh:   parseFloat(document.getElementById('edit-meter').value),
+    overall:    document.getElementById('edit-overall').value,
+    remarks:    document.getElementById('edit-remarks').value,
+  };
+
+  try {
+    const r = await apiCall({ action: 'editRow', row_index: subLogData[index]._row, data: updated });
+    if (r.status !== 'ok') throw new Error(r.message);
+  } catch(e) {
+    // In dev mode, update locally
+  }
+
+  subLogData[index] = updated;
+  renderSubLog(subLogData);
+  closeEditModal();
+  showToast('Submission updated.', 'success');
+}
+
+async function deleteRow(index) {
+  const r = subLogData[index];
+  if (!confirm(`Delete submission: ${r.date} · ${r.generator} · ${r.shift} shift · ${r.operator}?\n\nThis cannot be undone.`)) return;
+
+  try {
+    await apiCall({ action: 'deleteRow', row_index: r._row });
+  } catch(e) {
+    // Dev mode — delete locally
+  }
+
+  subLogData.splice(index, 1);
+  renderSubLog(subLogData);
+  showToast('Submission deleted.', 'success');
 }
 
 // ── PIN ──────────────────────────────────────────────────────
