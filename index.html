@@ -438,8 +438,9 @@
   <button onclick="switchTab('dashboard')">Dashboard</button>
   <button onclick="switchTab('report')">Report</button>
   <button onclick="switchTab('sub-log')">Submission Log</button>
-  <button onclick="switchTab('maint-log')" id="btn-maintlog">Maintenance Log</button>
-  <button onclick="switchTab('maint-config')" id="btn-maintconfig">Maint Config</button>
+  <button onclick="switchTab('maint-log')">Maintenance Log</button>
+  <button onclick="switchTab('operators')">Operators</button>
+  <button onclick="switchTab('maint-config')">Maint Config</button>
 </nav>
 
 <!-- ============================================================
@@ -946,6 +947,102 @@
 </div>
 
 <!-- ============================================================
+     TAB: OPERATORS
+     ============================================================ -->
+<div id="tab-operators" class="page">
+  <div class="section-title"><span class="accent">👷</span> Operators</div>
+
+  <div id="ops-loading" style="text-align:center;padding:40px;color:var(--muted);">
+    <div class="spinner" style="margin:0 auto 12px;"></div>Loading operators…
+  </div>
+
+  <div id="ops-content" style="display:none;">
+
+    <!-- Add operator -->
+    <div class="section-title" style="font-size:16px;"><span class="accent">➕</span> Add Operator</div>
+    <div class="config-panel" style="margin-bottom:24px;">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="new-op-name" placeholder="e.g. Muhammad Tariq">
+        </div>
+        <div class="form-group">
+          <label>Role / Title</label>
+          <input type="text" id="new-op-role" placeholder="e.g. Generator Operator">
+        </div>
+        <div class="form-group">
+          <label>Generator Access</label>
+          <select id="new-op-access">
+            <option value="All">All Generators</option>
+            <option value="340 KVA">340 KVA only</option>
+            <option value="110 KVA">110 KVA only</option>
+            <option value="500 KVA">500 KVA only</option>
+          </select>
+        </div>
+        <div class="form-group" style="align-self:flex-end;">
+          <button class="btn-submit" style="padding:10px 24px;font-size:14px;" onclick="addOperator()">+ Add Operator</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Operators table -->
+    <div class="section-title" style="font-size:16px;"><span class="accent">👤</span> Current Operators</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="ops-count"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Generator Access</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="ops-table-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Edit operator modal trigger note -->
+    <div style="margin-top:14px;font-size:12px;color:var(--muted);">
+      Click Edit on any row to update an operator's name, role, or access level.
+    </div>
+  </div>
+</div>
+
+<!-- EDIT OPERATOR MODAL -->
+<div class="modal-overlay" id="edit-op-modal">
+  <div class="modal" style="max-width:420px;">
+    <h2>✏️ Edit Operator</h2>
+    <p>Update the operator's details below.</p>
+    <input type="hidden" id="edit-op-index">
+    <div class="form-grid" style="margin-top:16px;">
+      <div class="form-group full">
+        <label>Full Name</label>
+        <input type="text" id="edit-op-name">
+      </div>
+      <div class="form-group full">
+        <label>Role / Title</label>
+        <input type="text" id="edit-op-role">
+      </div>
+      <div class="form-group full">
+        <label>Generator Access</label>
+        <select id="edit-op-access">
+          <option value="All">All Generators</option>
+          <option value="340 KVA">340 KVA only</option>
+          <option value="110 KVA">110 KVA only</option>
+          <option value="500 KVA">500 KVA only</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="btn-submit" style="flex:1;" onclick="saveOperatorEdit()">💾 Save</button>
+      <button class="btn-secondary" style="flex:1;" onclick="closeEditOpModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      TAB: MAINT CONFIG
      ============================================================ -->
 <div id="tab-maint-config" class="page">
@@ -1058,41 +1155,6 @@
       </div>
     </div>
 
-    <!-- Operators Config -->
-    <div class="config-panel">
-      <h3>Portal Operators</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Generator operators authorised to submit daily checks. Add or remove as staff change.</p>
-
-      <!-- Add operator form -->
-      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;align-items:flex-end;">
-        <div class="form-group" style="flex:2;min-width:140px;">
-          <label>Operator Name</label>
-          <input type="text" id="new-op-name" placeholder="Full name">
-        </div>
-        <div class="form-group" style="flex:2;min-width:130px;">
-          <label>Role / Title</label>
-          <input type="text" id="new-op-role" placeholder="e.g. Generator Operator">
-        </div>
-        <div class="form-group" style="flex:1;min-width:110px;">
-          <label>Generator Access</label>
-          <select id="new-op-access">
-            <option value="All">All</option>
-            <option value="340 KVA">340 KVA</option>
-            <option value="110 KVA">110 KVA</option>
-            <option value="500 KVA">500 KVA</option>
-          </select>
-        </div>
-        <button class="btn-submit" style="width:auto;padding:10px 20px;font-size:13px;align-self:flex-end;" onclick="addOperator()">+ Add Operator</button>
-      </div>
-
-      <div class="table-wrap" id="ops-table-wrap">
-        <table>
-          <thead><tr><th>#</th><th>Name</th><th>Role</th><th>Generator Access</th><th>Action</th></tr></thead>
-          <tbody id="ops-body"></tbody>
-        </table>
-      </div>
-    </div>
-
     <!-- Alert Config -->
     <div class="config-panel">
       <h3>Email Alerts</h3>
@@ -1148,7 +1210,7 @@
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────
-const SCRIPT_URL = 'YOUR_GAS_EXEC_URL_HERE'; // Replace with deployed GAS URL
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwv1N0muKTB6IEjS4SLBxjiKa_JzlChsDtzoMbjnEg4Z3kdlas7lfcnh6qT0r2b8akD/exec';
 const PIN = '1234';
 const GENS = {
   '340': { label: '340 KVA', model: 'P126Ti', serial: '433505', color: '#3b82f6', class: 'c340' },
@@ -1174,6 +1236,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sl-to').value = today;
   updateClock();
   setInterval(updateClock, 1000);
+
+  // ── SCRIPT URL CHECK ── show a clear banner if not yet configured
+  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_GAS_EXEC_URL_HERE') {
+    const banner = document.createElement('div');
+    banner.id = 'url-warning';
+    banner.style.cssText = 'background:#fef3c7;border-bottom:2px solid #d97706;padding:10px 24px;font-size:13px;color:#92400e;display:flex;align-items:center;gap:10px;';
+    banner.innerHTML = '<span style="font-size:18px;">⚠️</span><strong>Portal not connected to Google Sheets.</strong>&nbsp; Open index.html and replace <code>YOUR_GAS_EXEC_URL_HERE</code> with your deployed GAS /exec URL. Submissions will not save until this is done.';
+    document.querySelector('nav').after(banner);
+  }
+
   loadDashboard();
   loadReport();
 });
@@ -1187,7 +1259,7 @@ function updateClock() {
 
 // ── TABS ────────────────────────────────────────────────────
 function switchTab(id) {
-  if ((id === 'maint-log' || id === 'maint-config' || id === 'sub-log') && !maintUnlocked) {
+  if ((id === 'maint-log' || id === 'maint-config' || id === 'sub-log' || id === 'operators') && !maintUnlocked) {
     pinTarget = id;
     document.getElementById('pin-modal').classList.add('show');
     return;
@@ -1199,10 +1271,11 @@ function switchTab(id) {
     if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + id + "'")) b.classList.add('active');
   });
 
-  if (id === 'dashboard') loadDashboard();
-  if (id === 'report') loadReport();
-  if (id === 'sub-log') loadSubLog();
-  if (id === 'maint-log') loadMaintLog();
+  if (id === 'dashboard')  loadDashboard();
+  if (id === 'report')     loadReport();
+  if (id === 'sub-log')    loadSubLog();
+  if (id === 'maint-log')  loadMaintLog();
+  if (id === 'operators')  loadOperators();
   if (id === 'maint-config') loadConfig();
 }
 
@@ -1260,11 +1333,10 @@ async function submitLog() {
       document.getElementById('f-remarks').value = '';
       document.getElementById('f-meter').value = '';
     } else {
-      showToast('Error: ' + (r.message || 'Unknown'), 'error');
+      showToast('Error: ' + (r.message || 'Unknown error from server.'), 'error');
     }
   } catch(e) {
-    // Dev mode: show success anyway
-    showToast('(Dev mode) Log recorded locally.', 'success');
+    showToast('Could not reach Google Sheets. Check your internet connection and verify the GAS URL is deployed correctly.', 'error');
   }
 }
 
@@ -1291,10 +1363,10 @@ async function submitMaint() {
       showToast('Maintenance record saved.', 'success');
       loadMaintLog();
     } else {
-      showToast('Error: ' + (r.message || 'Unknown'), 'error');
+      showToast('Error: ' + (r.message || 'Unknown error from server.'), 'error');
     }
   } catch(e) {
-    showToast('(Dev mode) Maintenance record saved.', 'success');
+    showToast('Could not reach Google Sheets. Check your internet connection and GAS URL.', 'error');
   }
 }
 
@@ -1608,6 +1680,81 @@ function filterMaintHistory() {
   loadMaintLog();
 }
 
+// ── OPERATORS TAB ─────────────────────────────────────────────
+async function loadOperators() {
+  document.getElementById('ops-loading').style.display = 'block';
+  document.getElementById('ops-content').style.display = 'none';
+
+  let data;
+  try {
+    const result = await apiCall({ action: 'getConfig' });
+    data = (result && result.status === 'ok') ? result : null;
+  } catch(e) { data = null; }
+  if (!data) data = { operators: getDemoOperators() };
+
+  operatorList = data.operators || [];
+  renderOperatorsTab(operatorList);
+
+  document.getElementById('ops-loading').style.display = 'none';
+  document.getElementById('ops-content').style.display = 'block';
+}
+
+function renderOperatorsTab(ops) {
+  document.getElementById('ops-count').textContent = `${ops.length} operator${ops.length !== 1 ? 's' : ''} registered`;
+  let tbody = '';
+  ops.forEach((o, i) => {
+    const accessBadge = o.gen_access === 'All' ? 'badge-green' : 'badge-blue';
+    tbody += `<tr>
+      <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+      <td style="font-weight:600;">${o.name}</td>
+      <td style="color:var(--muted);">${o.role}</td>
+      <td><span class="badge ${accessBadge}">${o.gen_access || 'All'}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn-secondary" style="padding:4px 12px;font-size:11px;margin-right:6px;" onclick="openEditOpModal(${i})">✏️ Edit</button>
+        <button class="btn-secondary" style="padding:4px 12px;font-size:11px;color:var(--red);border-color:#fca5a5;" onclick="removeOperator(${i})">🗑 Remove</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('ops-table-body').innerHTML = tbody ||
+    '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px;">No operators added yet. Use the form above to add your first operator.</td></tr>';
+}
+
+function openEditOpModal(index) {
+  const o = operatorList[index];
+  if (!o) return;
+  document.getElementById('edit-op-index').value = index;
+  document.getElementById('edit-op-name').value = o.name;
+  document.getElementById('edit-op-role').value = o.role;
+  document.getElementById('edit-op-access').value = o.gen_access || 'All';
+  document.getElementById('edit-op-modal').classList.add('show');
+}
+
+function closeEditOpModal() {
+  document.getElementById('edit-op-modal').classList.remove('show');
+}
+
+async function saveOperatorEdit() {
+  const index  = parseInt(document.getElementById('edit-op-index').value);
+  const name   = document.getElementById('edit-op-name').value.trim();
+  const role   = document.getElementById('edit-op-role').value.trim();
+  const access = document.getElementById('edit-op-access').value;
+  if (!name) { showToast('Name cannot be empty.', 'error'); return; }
+
+  const oldName = operatorList[index].name;
+  operatorList[index] = { name, role, gen_access: access };
+  renderOperatorsTab(operatorList);
+  closeEditOpModal();
+
+  try {
+    // Remove old entry and re-add with new details
+    await apiCall({ action: 'removeOperator', name: oldName });
+    await apiCall({ action: 'addOperator', operator: { name, role, gen_access: access } });
+    showToast(`${name} updated.`, 'success');
+  } catch(e) {
+    showToast(`${name} updated locally.`, 'success');
+  }
+}
+
 // ── CONFIG ───────────────────────────────────────────────────
 async function loadConfig() {
   document.getElementById('config-loading').style.display = 'block';
@@ -1628,17 +1775,9 @@ async function loadConfig() {
 }
 
 function renderOperators(ops) {
-  let tbody = '';
-  ops.forEach((o, i) => {
-    tbody += `<tr>
-      <td>${i+1}</td>
-      <td>${o.name}</td>
-      <td>${o.role}</td>
-      <td>${o.gen_access || 'All'}</td>
-      <td><button class="btn-secondary" style="padding:4px 12px;font-size:11px;color:var(--red);border-color:#fca5a5;" onclick="removeOperator(${i})">Remove</button></td>
-    </tr>`;
-  });
-  document.getElementById('ops-body').innerHTML = tbody || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No operators added yet</td></tr>';
+  // Used by loadConfig for backwards compat — delegates to the operators tab renderer
+  operatorList = ops;
+  if (document.getElementById('ops-table-body')) renderOperatorsTab(ops);
 }
 
 // In-memory operator list (syncs to sheet via GAS on add/remove)
@@ -1653,7 +1792,7 @@ async function addOperator() {
 
   const newOp = { name, role, gen_access: access };
   operatorList.push(newOp);
-  renderOperators(operatorList);
+  renderOperatorsTab(operatorList);
 
   document.getElementById('new-op-name').value = '';
   document.getElementById('new-op-role').value = '';
@@ -1662,7 +1801,7 @@ async function addOperator() {
     await apiCall({ action: 'addOperator', operator: newOp });
     showToast(`${name} added as operator.`, 'success');
   } catch(e) {
-    showToast(`${name} added (will sync on next save).`, 'success');
+    showToast(`${name} added. Will sync to sheet once GAS URL is configured.`, 'success');
   }
 }
 
@@ -1670,7 +1809,7 @@ async function removeOperator(index) {
   const op = operatorList[index];
   if (!confirm(`Remove ${op.name} from operators?`)) return;
   operatorList.splice(index, 1);
-  renderOperators(operatorList);
+  renderOperatorsTab(operatorList);
 
   try {
     await apiCall({ action: 'removeOperator', name: op.name });
