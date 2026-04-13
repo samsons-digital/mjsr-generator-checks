@@ -405,6 +405,26 @@
   .report-stat .rs-val { font-family: 'Barlow Condensed', sans-serif; font-size: 42px; font-weight: 700; color: var(--gold); }
   .report-stat .rs-label { font-size: 11px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
 
+  /* ── DIESEL ── */
+  .diesel-stock-bar { height:18px; border-radius:20px; overflow:hidden; background:#e5e7eb; margin:8px 0 4px; }
+  .diesel-stock-fill { height:100%; border-radius:20px; transition:width .6s; }
+  .stock-ok { background: linear-gradient(90deg, #16a34a, #22c55e); }
+  .stock-warn { background: linear-gradient(90deg, #d97706, #f59e0b); }
+  .stock-crit { background: linear-gradient(90deg, #dc2626, #ef4444); }
+  .consumer-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-bottom:20px; }
+  .consumer-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+  .consumer-card .cc-name { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+  .consumer-card .cc-val { font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:700; color:var(--text); line-height:1; }
+  .consumer-card .cc-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+  .period-tabs { display:flex; gap:6px; margin-bottom:16px; }
+  .period-tab { background:#f1f4f9; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:12px; font-weight:700; letter-spacing:1px; padding:7px 14px; text-transform:uppercase; transition:all .15s; }
+  .period-tab.active { background:var(--gold); border-color:var(--gold); color:#fff; }
+  .stock-hero { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px 24px; margin-bottom:20px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+  .stock-hero .sh-val { font-family:'Barlow Condensed',sans-serif; font-size:52px; font-weight:700; line-height:1; }
+  .stock-hero .sh-label { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:4px; }
+  .stock-hero .sh-sub { font-size:12px; color:var(--muted); margin-top:6px; }
+  .stock-hero .sh-bar-wrap { flex:1; min-width:200px; }
+
   /* ── EMPTY STATE ── */
   .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
   .empty-state .es-icon { font-size: 48px; margin-bottom: 12px; }
@@ -441,6 +461,9 @@
   <button onclick="switchTab('maint-log')">Maintenance Log</button>
   <button onclick="switchTab('operators')">Operators</button>
   <button onclick="switchTab('maint-config')">Maint Config</button>
+  <button onclick="switchTab('diesel-log')" style="border-left:2px solid var(--border);margin-left:6px;">⛽ Diesel Log</button>
+  <button onclick="switchTab('diesel-overview')">⛽ Overview</button>
+  <button onclick="switchTab('diesel-delivery')">⛽ Deliveries</button>
 </nav>
 
 <!-- ============================================================
@@ -642,6 +665,21 @@
     <div class="form-group full">
       <label>Additional Remarks</label>
       <textarea id="f-remarks" placeholder="Any faults, observations or actions taken..."></textarea>
+    </div>
+  </div>
+
+  <!-- Diesel Usage -->
+  <div class="checks-section">
+    <h3>⛽ Diesel Usage Today</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Diesel Used (Litres)</label>
+        <input type="number" id="f-diesel-used" placeholder="e.g. 200" min="0" step="1">
+      </div>
+      <div class="form-group">
+        <label>Purpose / Notes</label>
+        <input type="text" id="f-diesel-notes" placeholder="e.g. Normal operation, refuelled from main tank">
+      </div>
     </div>
   </div>
 
@@ -1173,6 +1211,158 @@
   </div>
 </div>
 
+<!-- ============================================================
+     TAB: DIESEL LOG
+     ============================================================ -->
+<div id="tab-diesel-log" class="page">
+  <div class="section-title"><span class="accent">⛽</span> Diesel Usage Log</div>
+
+  <div class="filter-row" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:18px;">
+    <div class="form-group">
+      <label>Consumer</label>
+      <select id="dl-consumer" onchange="loadDieselLog()">
+        <option value="">All Consumers</option>
+        <option>340 KVA Generator</option>
+        <option>110 KVA Generator</option>
+        <option>500 KVA Generator</option>
+        <option>Samsons Inn 45 KVA</option>
+        <option>Samsons Inn 33 KVA</option>
+        <option>Green Valley Generator</option>
+        <option>Snow Blower</option>
+        <option>Tractor 360</option>
+        <option>Loader</option>
+        <option>Dayna AK1214</option>
+        <option>PistenBully</option>
+        <option>GM Vigo</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>From</label>
+      <input type="date" id="dl-from" onchange="loadDieselLog()">
+    </div>
+    <div class="form-group">
+      <label>To</label>
+      <input type="date" id="dl-to" onchange="loadDieselLog()">
+    </div>
+    <button class="btn-secondary" onclick="clearDieselLogFilters()" style="align-self:flex-end;">Clear</button>
+  </div>
+
+  <div id="diesel-log-loading" style="text-align:center;padding:40px;color:var(--muted);">
+    <div class="spinner" style="margin:0 auto 12px;"></div>Loading…
+  </div>
+  <div id="diesel-log-content" style="display:none;">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;" id="dl-count"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Generator / Unit</th><th>Consumer</th><th>Litres Used</th><th>Purpose / Notes</th><th>Logged By</th></tr>
+        </thead>
+        <tbody id="dl-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB: DIESEL OVERVIEW
+     ============================================================ -->
+<div id="tab-diesel-overview" class="page">
+  <div class="section-title"><span class="accent">⛽</span> Diesel Overview — Resort Wide</div>
+
+  <!-- Period selector -->
+  <div class="period-tabs" id="overview-period-tabs">
+    <button class="period-tab active" onclick="setOverviewPeriod('week',this)">This Week</button>
+    <button class="period-tab" onclick="setOverviewPeriod('month',this)">This Month</button>
+    <button class="period-tab" onclick="setOverviewPeriod('year',this)">This Year</button>
+    <button class="period-tab" onclick="setOverviewPeriod('all',this)">All Time</button>
+  </div>
+
+  <div id="overview-loading" style="text-align:center;padding:40px;color:var(--muted);">
+    <div class="spinner" style="margin:0 auto 12px;"></div>Loading…
+  </div>
+  <div id="overview-content" style="display:none;">
+
+    <!-- Stock hero -->
+    <div class="stock-hero" id="stock-hero-block"></div>
+
+    <!-- Summary stat tiles -->
+    <div class="tiles-row" id="diesel-summary-tiles"></div>
+
+    <!-- Consumer breakdown -->
+    <div class="section-title" style="font-size:16px;margin-top:4px;"><span class="accent">📊</span> Usage by Consumer</div>
+    <div class="consumer-grid" id="consumer-breakdown"></div>
+
+    <!-- Monthly trend table -->
+    <div class="section-title" style="font-size:16px;"><span class="accent">📅</span> Monthly Summary</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Month</th><th>340 KVA</th><th>110 KVA</th><th>500 KVA</th><th>Other Gens</th><th>Vehicles & Machinery</th><th>Total Used</th><th>Received</th><th>Running Stock</th></tr>
+        </thead>
+        <tbody id="monthly-trend-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB: DIESEL DELIVERIES
+     ============================================================ -->
+<div id="tab-diesel-delivery" class="page">
+  <div class="section-title"><span class="accent">🚚</span> Diesel Deliveries — Log & Stock</div>
+
+  <!-- Current Stock Hero -->
+  <div class="stock-hero" id="delivery-stock-hero" style="margin-bottom:20px;"></div>
+
+  <!-- Log new delivery -->
+  <div class="section-title" style="font-size:16px;"><span class="accent">➕</span> Log New Delivery</div>
+  <div class="config-panel" style="margin-bottom:24px;">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Delivery Date</label>
+        <input type="date" id="del-date">
+      </div>
+      <div class="form-group">
+        <label>Litres Received</label>
+        <input type="number" id="del-litres" placeholder="e.g. 2000" min="1">
+      </div>
+      <div class="form-group">
+        <label>Supplier</label>
+        <input type="text" id="del-supplier" placeholder="e.g. PSO / HASCOL / Other">
+      </div>
+      <div class="form-group">
+        <label>Price per Litre (PKR)</label>
+        <input type="number" id="del-price" placeholder="e.g. 295" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Delivery Note / Invoice No.</label>
+        <input type="text" id="del-invoice" placeholder="e.g. INV-2026-042">
+      </div>
+      <div class="form-group">
+        <label>Received By</label>
+        <input type="text" id="del-received-by" placeholder="Name">
+      </div>
+    </div>
+    <button class="btn-submit" style="margin-top:10px;" onclick="submitDelivery()">🚚 Log Delivery</button>
+  </div>
+
+  <!-- Delivery history -->
+  <div class="section-title" style="font-size:16px;"><span class="accent">📋</span> Delivery History</div>
+  <div id="delivery-loading" style="text-align:center;padding:30px;color:var(--muted);">
+    <div class="spinner" style="margin:0 auto 10px;"></div>Loading…
+  </div>
+  <div id="delivery-content" style="display:none;">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Litres</th><th>Supplier</th><th>Price/L (PKR)</th><th>Total Cost (PKR)</th><th>Invoice No.</th><th>Received By</th><th>Stock After</th></tr>
+        </thead>
+        <tbody id="delivery-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- PIN MODAL -->
 <div class="modal-overlay" id="pin-modal">
   <div class="modal">
@@ -1234,6 +1424,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('rep-to').value = today;
   document.getElementById('sl-from').value = d30.toISOString().slice(0,10);
   document.getElementById('sl-to').value = today;
+  document.getElementById('dl-from').value = d30.toISOString().slice(0,10);
+  document.getElementById('dl-to').value = today;
+  document.getElementById('del-date').value = today;
   updateClock();
   setInterval(updateClock, 1000);
 
@@ -1271,12 +1464,15 @@ function switchTab(id) {
     if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + id + "'")) b.classList.add('active');
   });
 
-  if (id === 'dashboard')  loadDashboard();
-  if (id === 'report')     loadReport();
-  if (id === 'sub-log')    loadSubLog();
-  if (id === 'maint-log')  loadMaintLog();
-  if (id === 'operators')  loadOperators();
+  if (id === 'dashboard')    loadDashboard();
+  if (id === 'report')       loadReport();
+  if (id === 'sub-log')      loadSubLog();
+  if (id === 'maint-log')    loadMaintLog();
+  if (id === 'operators')    loadOperators();
   if (id === 'maint-config') loadConfig();
+  if (id === 'diesel-log')      loadDieselLog();
+  if (id === 'diesel-overview') loadDieselOverview();
+  if (id === 'diesel-delivery') loadDieselDelivery();
 }
 
 // ── GEN SELECTOR ────────────────────────────────────────────
@@ -1323,6 +1519,8 @@ async function submitLog() {
     overall: document.getElementById('f-overall').value,
     engineer: document.getElementById('f-engineer').value,
     remarks: document.getElementById('f-remarks').value,
+    diesel_used: parseFloat(document.getElementById('f-diesel-used').value) || 0,
+    diesel_notes: document.getElementById('f-diesel-notes').value,
     ...checks
   };
 
@@ -2036,6 +2234,358 @@ function getDemoOperators() {
     { name: 'Operator B', role: 'Generator Operator', gen_access: 'All' },
   ];
 }
+
+// ═══════════════════════════════════════════════════════════
+// DIESEL MODULE
+// ═══════════════════════════════════════════════════════════
+
+// ── Historical seed data (from Excel 2024-2026) ───────────
+const DIESEL_HISTORY = [
+  {month:'Jul 2024', gen340:4100, gen110:0,    gen500:0,    inn45:705,  inn33:88,  gv:0,   snowblwr:0,  tractor:0,  loader:0,  dayna:7,   pistenbully:0,   gmvigo:0,  received:7500},
+  {month:'Aug 2024', gen340:2620, gen110:0,    gen500:0,    inn45:500,  inn33:40,  gv:40,  snowblwr:0,  tractor:0,  loader:0,  dayna:0,   pistenbully:0,   gmvigo:0,  received:2000},
+  {month:'Sep 2024', gen340:1680, gen110:0,    gen500:0,    inn45:592,  inn33:38,  gv:0,   snowblwr:0,  tractor:50, loader:50, dayna:0,   pistenbully:0,   gmvigo:0,  received:4000},
+  {month:'Oct 2024', gen340:1600, gen110:360,  gen500:0,    inn45:660,  inn33:50,  gv:0,   snowblwr:0,  tractor:20, loader:0,  dayna:0,   pistenbully:0,   gmvigo:0,  received:2000},
+  {month:'Nov 2024', gen340:2050, gen110:900,  gen500:200,  inn45:150,  inn33:250, gv:0,   snowblwr:0,  tractor:0,  loader:25, dayna:0,   pistenbully:100, gmvigo:0,  received:4000},
+  {month:'Dec 2024', gen340:5800, gen110:300,  gen500:2800, inn45:0,    inn33:400, gv:0,   snowblwr:16, tractor:20, loader:90, dayna:0,   pistenbully:360, gmvigo:0,  received:10000},
+  {month:'Jan 2025', gen340:5800, gen110:500,  gen500:1600, inn45:400,  inn33:0,   gv:0,   snowblwr:0,  tractor:0,  loader:80, dayna:0,   pistenbully:597, gmvigo:20, received:10000},
+  {month:'Feb 2025', gen340:5300, gen110:600,  gen500:700,  inn45:200,  inn33:800, gv:0,   snowblwr:40, tractor:0,  loader:140,dayna:0,   pistenbully:790, gmvigo:0,  received:8000},
+  {month:'Mar 2025', gen340:600,  gen110:1600, gen500:0,    inn45:0,    inn33:0,   gv:0,   snowblwr:0,  tractor:0,  loader:0,  dayna:0,   pistenbully:192, gmvigo:0,  received:2000},
+  {month:'Apr 2025', gen340:2200, gen110:1000, gen500:0,    inn45:0,    inn33:0,   gv:0,   snowblwr:0,  tractor:0,  loader:0,  dayna:0,   pistenbully:0,   gmvigo:0,  received:2000},
+  {month:'May 2025', gen340:1700, gen110:1000, gen500:0,    inn45:200,  inn33:0,   gv:10,  snowblwr:0,  tractor:66, loader:20, dayna:0,   pistenbully:10,  gmvigo:0,  received:3000},
+  {month:'Jun 2025', gen340:3000, gen110:900,  gen500:0,    inn45:0,    inn33:0,   gv:10,  snowblwr:0,  tractor:0,  loader:0,  dayna:0,   pistenbully:0,   gmvigo:0,  received:5000},
+  {month:'Jul 2025', gen340:3000, gen110:300,  gen500:0,    inn45:200,  inn33:0,   gv:30,  snowblwr:0,  tractor:0,  loader:37, dayna:0,   pistenbully:0,   gmvigo:0,  received:3000},
+  {month:'Aug 2025', gen340:1400, gen110:1200, gen500:200,  inn45:0,    inn33:200, gv:25,  snowblwr:0,  tractor:0,  loader:30, dayna:0,   pistenbully:0,   gmvigo:0,  received:4000},
+  {month:'Sep 2025', gen340:200,  gen110:1000, gen500:0,    inn45:0,    inn33:0,   gv:26,  snowblwr:0,  tractor:0,  loader:0,  dayna:0,   pistenbully:0,   gmvigo:0,  received:0},
+  {month:'Oct 2025', gen340:200,  gen110:1300, gen500:200,  inn45:0,    inn33:0,   gv:20,  snowblwr:0,  tractor:0,  loader:0,  dayna:0,   pistenbully:0,   gmvigo:0,  received:1000},
+  {month:'Nov 2025', gen340:1000, gen110:1300, gen500:200,  inn45:0,    inn33:0,   gv:0,   snowblwr:20, tractor:10, loader:0,  dayna:20,  pistenbully:0,   gmvigo:0,  received:2000},
+  {month:'Dec 2025', gen340:2400, gen110:1300, gen500:400,  inn45:200,  inn33:0,   gv:100, snowblwr:0,  tractor:0,  loader:90, dayna:0,   pistenbully:80,  gmvigo:0,  received:6000},
+  {month:'Jan 2026', gen340:6120, gen110:0,    gen500:1600, inn45:278,  inn33:0,   gv:80,  snowblwr:45, tractor:50, loader:195,dayna:0,   pistenbully:640, gmvigo:0,  received:10000},
+  {month:'Feb 2026', gen340:3270, gen110:20,   gen500:0,    inn45:180,  inn33:0,   gv:30,  snowblwr:108,tractor:0,  loader:125,dayna:0,   pistenbully:830, gmvigo:0,  received:6000},
+  {month:'Mar 2026', gen340:200,  gen110:400,  gen500:0,    inn45:0,    inn33:0,   gv:0,   snowblwr:0,  tractor:0,  loader:0,  dayna:0,   pistenbully:0,   gmvigo:0,  received:0},
+];
+
+const MIN_PAR = 1500; // litres — trigger reorder alert to Asif
+
+function dieselRowTotal(r) {
+  return r.gen340 + r.gen110 + r.gen500 + r.inn45 + r.inn33 + r.gv +
+         r.snowblwr + r.tractor + r.loader + r.dayna + r.pistenbully + r.gmvigo;
+}
+
+function getRunningStock() {
+  let stock = 0;
+  DIESEL_HISTORY.forEach(r => { stock += r.received - dieselRowTotal(r); });
+  return Math.max(0, stock);
+}
+
+function stockClass(litres) {
+  if (litres <= 0) return 'stock-crit';
+  if (litres <= MIN_PAR) return 'stock-warn';
+  return 'stock-ok';
+}
+
+function stockBarPct(litres) {
+  const max = 10000;
+  return Math.min(100, Math.max(0, (litres / max) * 100));
+}
+
+function renderStockHero(elId, litres) {
+  const cls = stockClass(litres);
+  const pct = stockBarPct(litres);
+  const statusText = litres <= 0 ? '🔴 CRITICAL — OUT OF STOCK' : litres <= MIN_PAR ? '⚠️ LOW — Order Required' : '✅ Adequate Stock';
+  const statusColor = litres <= 0 ? 'var(--red)' : litres <= MIN_PAR ? 'var(--amber)' : 'var(--green)';
+  document.getElementById(elId).innerHTML = `
+    <div>
+      <div class="sh-label">Current Diesel Stock</div>
+      <div class="sh-val" style="color:${statusColor}">${litres.toLocaleString()} L</div>
+      <div class="sh-sub" style="color:${statusColor};font-weight:600;">${statusText}</div>
+      <div class="sh-sub">Minimum par level: ${MIN_PAR.toLocaleString()} L &nbsp;·&nbsp; Alert to: asif@malamjabbaresort.com</div>
+    </div>
+    <div class="sh-bar-wrap">
+      <div class="sh-label">Stock Level</div>
+      <div class="diesel-stock-bar"><div class="diesel-stock-fill ${cls}" style="width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px;"><span>0 L</span><span>Min: ${MIN_PAR.toLocaleString()} L</span><span>10,000 L</span></div>
+    </div>`;
+}
+
+// ── DIESEL LOG TAB ────────────────────────────────────────
+async function loadDieselLog() {
+  document.getElementById('diesel-log-loading').style.display = 'block';
+  document.getElementById('diesel-log-content').style.display = 'none';
+
+  const consumer = document.getElementById('dl-consumer').value;
+  const from     = document.getElementById('dl-from').value;
+  const to       = document.getElementById('dl-to').value;
+
+  let logs = [];
+  try {
+    const result = await apiCall({ action: 'getDieselLog', consumer, from, to });
+    if (result && result.status === 'ok') logs = result.logs || [];
+    else throw new Error('no data');
+  } catch(e) {
+    logs = getDemoDieselLogs();
+  }
+
+  document.getElementById('dl-count').textContent = `${logs.length} record${logs.length !== 1 ? 's' : ''}`;
+  let tbody = '';
+  logs.forEach(r => {
+    const genBadge = r.generator ? `<span class="badge badge-blue" style="margin-right:4px;">${r.generator}</span>` : '';
+    tbody += `<tr>
+      <td>${r.date}</td>
+      <td>${genBadge}</td>
+      <td>${r.consumer || r.generator || '—'}</td>
+      <td style="font-weight:700;color:var(--amber);">${r.litres || 0} L</td>
+      <td style="color:var(--muted);font-size:11px;">${r.notes || ''}</td>
+      <td style="color:var(--muted);font-size:11px;">${r.operator || '—'}</td>
+    </tr>`;
+  });
+  document.getElementById('dl-body').innerHTML = tbody || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">No diesel records found for this filter.</td></tr>';
+
+  document.getElementById('diesel-log-loading').style.display = 'none';
+  document.getElementById('diesel-log-content').style.display = 'block';
+}
+
+function clearDieselLogFilters() {
+  document.getElementById('dl-consumer').value = '';
+  document.getElementById('dl-status') && (document.getElementById('dl-status').value = '');
+  const today = new Date().toISOString().slice(0,10);
+  const d30 = new Date(); d30.setDate(d30.getDate()-30);
+  document.getElementById('dl-from').value = d30.toISOString().slice(0,10);
+  document.getElementById('dl-to').value = today;
+  loadDieselLog();
+}
+
+// ── DIESEL OVERVIEW TAB ───────────────────────────────────
+let overviewPeriod = 'month';
+
+function setOverviewPeriod(period, btn) {
+  overviewPeriod = period;
+  document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDieselOverview();
+}
+
+async function loadDieselOverview() {
+  document.getElementById('overview-loading').style.display = 'block';
+  document.getElementById('overview-content').style.display = 'none';
+  renderDieselOverview();
+  document.getElementById('overview-loading').style.display = 'none';
+  document.getElementById('overview-content').style.display = 'block';
+}
+
+function getFilteredHistory(period) {
+  const now = new Date();
+  return DIESEL_HISTORY.filter(r => {
+    if (period === 'all') return true;
+    const [mStr, yStr] = r.month.split(' ');
+    const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+    const rDate = new Date(parseInt(yStr), months[mStr] || 0, 1);
+    if (period === 'year') return rDate.getFullYear() === now.getFullYear();
+    if (period === 'month') return rDate.getMonth() === now.getMonth() && rDate.getFullYear() === now.getFullYear();
+    if (period === 'week') {
+      const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate()-7);
+      return rDate >= weekAgo;
+    }
+    return true;
+  });
+}
+
+function renderDieselOverview() {
+  const rows = getFilteredHistory(overviewPeriod);
+  const currentStock = getRunningStock();
+  renderStockHero('stock-hero-block', currentStock);
+
+  // Totals
+  const totals = { gen340:0, gen110:0, gen500:0, inn45:0, inn33:0, gv:0, snowblwr:0, tractor:0, loader:0, dayna:0, pistenbully:0, gmvigo:0, received:0 };
+  rows.forEach(r => { Object.keys(totals).forEach(k => { totals[k] += r[k] || 0; }); });
+  const totalUsed = dieselRowTotal(totals);
+
+  // Summary tiles
+  document.getElementById('diesel-summary-tiles').innerHTML = `
+    <div class="tile ok">
+      <div class="tile-label">Total Consumed</div>
+      <div class="tile-val" style="color:var(--amber)">${totalUsed.toLocaleString()} L</div>
+      <div class="tile-sub">${rows.length} month${rows.length!==1?'s':''} selected</div>
+    </div>
+    <div class="tile ok">
+      <div class="tile-label">Generators Only</div>
+      <div class="tile-val" style="color:var(--blue)">${(totals.gen340+totals.gen110+totals.gen500).toLocaleString()} L</div>
+      <div class="tile-sub">340 · 110 · 500 KVA (MJSR)</div>
+    </div>
+    <div class="tile ok">
+      <div class="tile-label">Vehicles & Machinery</div>
+      <div class="tile-val" style="color:var(--muted)">${(totals.tractor+totals.loader+totals.dayna+totals.pistenbully+totals.gmvigo+totals.snowblwr).toLocaleString()} L</div>
+      <div class="tile-sub">PistenBully · Tractor · Loader · etc</div>
+    </div>
+    <div class="tile ok">
+      <div class="tile-label">Diesel Received</div>
+      <div class="tile-val" style="color:var(--green)">${totals.received.toLocaleString()} L</div>
+      <div class="tile-sub">All deliveries in period</div>
+    </div>`;
+
+  // Consumer breakdown cards
+  const consumers = [
+    { key:'gen340',     label:'340 KVA Generator',    color:'var(--gen-340)' },
+    { key:'gen110',     label:'110 KVA Generator',    color:'var(--gen-110)' },
+    { key:'gen500',     label:'500 KVA Generator',    color:'var(--gen-500)' },
+    { key:'inn45',      label:'Samsons Inn 45 KVA',   color:'#059669' },
+    { key:'inn33',      label:'Samsons Inn 33 KVA',   color:'#0891b2' },
+    { key:'gv',         label:'Green Valley Gen',     color:'#16a34a' },
+    { key:'pistenbully',label:'PistenBully',           color:'#7c3aed' },
+    { key:'snowblwr',   label:'Snow Blower',           color:'#2563eb' },
+    { key:'tractor',    label:'Tractor 360',           color:'#b45309' },
+    { key:'loader',     label:'Loader (FL-01)',        color:'#dc2626' },
+    { key:'dayna',      label:'Dayna AK1214',          color:'#6b7280' },
+    { key:'gmvigo',     label:'GM Vigo',               color:'#374151' },
+  ];
+  let cards = '';
+  consumers.forEach(c => {
+    const val = totals[c.key] || 0;
+    if (val === 0 && overviewPeriod !== 'all') return;
+    const pct = totalUsed > 0 ? ((val / totalUsed) * 100).toFixed(1) : 0;
+    cards += `<div class="consumer-card">
+      <div class="cc-name">${c.label}</div>
+      <div class="cc-val" style="color:${c.color}">${val.toLocaleString()} <span style="font-size:16px;color:var(--muted)">L</span></div>
+      <div class="cc-sub">${pct}% of total</div>
+      <div class="diesel-stock-bar" style="margin-top:8px;height:6px;"><div class="diesel-stock-fill stock-ok" style="background:${c.color};width:${pct}%"></div></div>
+    </div>`;
+  });
+  document.getElementById('consumer-breakdown').innerHTML = cards || '<p style="color:var(--muted);font-size:13px;padding:10px 0;">No data for selected period.</p>';
+
+  // Monthly trend table — show running stock
+  let runningStock = 0;
+  // Calculate opening stock from all data
+  let allReceived = 0, allUsed = 0;
+  DIESEL_HISTORY.forEach(r => { allReceived += r.received; allUsed += dieselRowTotal(r); });
+  // Build running stock per month
+  let cumStock = 0;
+  let tbody = '';
+  DIESEL_HISTORY.forEach(r => {
+    const used = dieselRowTotal(r);
+    const otherGens = r.inn45 + r.inn33 + r.gv;
+    const vehicles = r.snowblwr + r.tractor + r.loader + r.dayna + r.pistenbully + r.gmvigo;
+    cumStock += r.received - used;
+    const stockVal = Math.max(0, cumStock);
+    const stockCls = stockVal <= 0 ? 'color:var(--red)' : stockVal <= MIN_PAR ? 'color:var(--amber)' : 'color:var(--green)';
+    tbody += `<tr>
+      <td style="font-weight:600;">${r.month}</td>
+      <td>${r.gen340.toLocaleString()}</td>
+      <td>${r.gen110.toLocaleString()}</td>
+      <td>${r.gen500.toLocaleString()}</td>
+      <td style="color:var(--muted);">${otherGens.toLocaleString()}</td>
+      <td style="color:var(--muted);">${vehicles.toLocaleString()}</td>
+      <td style="font-weight:700;color:var(--amber)">${used.toLocaleString()} L</td>
+      <td style="color:var(--green);">${r.received.toLocaleString()}</td>
+      <td style="font-weight:700;${stockCls}">${stockVal.toLocaleString()} L</td>
+    </tr>`;
+  });
+  document.getElementById('monthly-trend-body').innerHTML = tbody;
+}
+
+// ── DIESEL DELIVERY TAB ───────────────────────────────────
+async function loadDieselDelivery() {
+  const stock = getRunningStock();
+  renderStockHero('delivery-stock-hero', stock);
+
+  document.getElementById('delivery-loading').style.display = 'block';
+  document.getElementById('delivery-content').style.display = 'none';
+
+  let deliveries = [];
+  try {
+    const result = await apiCall({ action: 'getDieselDeliveries' });
+    if (result && result.status === 'ok') deliveries = result.deliveries || [];
+    else throw new Error('no data');
+  } catch(e) {
+    deliveries = getDemoDeliveries();
+  }
+
+  renderDeliveryHistory(deliveries);
+  document.getElementById('delivery-loading').style.display = 'none';
+  document.getElementById('delivery-content').style.display = 'block';
+}
+
+function renderDeliveryHistory(deliveries) {
+  let tbody = '';
+  let cumStock = getRunningStock();
+  // Show most recent first
+  [...deliveries].reverse().forEach(d => {
+    const total = d.litres && d.price ? (d.litres * d.price).toLocaleString() : '—';
+    tbody += `<tr>
+      <td>${d.date}</td>
+      <td style="font-weight:700;color:var(--green);">${(d.litres||0).toLocaleString()} L</td>
+      <td>${d.supplier || '—'}</td>
+      <td>${d.price ? 'PKR ' + d.price : '—'}</td>
+      <td>${total !== '—' ? 'PKR ' + total : '—'}</td>
+      <td style="color:var(--muted);font-size:11px;">${d.invoice || '—'}</td>
+      <td>${d.received_by || '—'}</td>
+      <td style="font-weight:600;">${(d.stock_after || 0).toLocaleString()} L</td>
+    </tr>`;
+  });
+  document.getElementById('delivery-body').innerHTML = tbody || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px;">No deliveries logged yet.</td></tr>';
+}
+
+async function submitDelivery() {
+  const date       = document.getElementById('del-date').value;
+  const litres     = parseFloat(document.getElementById('del-litres').value);
+  const supplier   = document.getElementById('del-supplier').value.trim();
+  const price      = parseFloat(document.getElementById('del-price').value) || 0;
+  const invoice    = document.getElementById('del-invoice').value.trim();
+  const receivedBy = document.getElementById('del-received-by').value.trim();
+
+  if (!litres || litres <= 0) { showToast('Please enter a valid litres amount.', 'error'); return; }
+  if (!supplier)              { showToast('Please enter the supplier name.', 'error'); return; }
+
+  const currentStock = getRunningStock();
+  const stockAfter   = currentStock + litres;
+
+  const payload = {
+    action: 'submitDieselDelivery',
+    date, litres, supplier, price, invoice,
+    received_by: receivedBy,
+    stock_after: stockAfter
+  };
+
+  // Optimistically update historical seed
+  const today = new Date();
+  const mLabel = today.toLocaleString('en-GB',{month:'short'}) + ' ' + today.getFullYear();
+  const existing = DIESEL_HISTORY.find(r => r.month === mLabel);
+  if (existing) { existing.received += litres; }
+  else { DIESEL_HISTORY.push({ month: mLabel, gen340:0,gen110:0,gen500:0,inn45:0,inn33:0,gv:0,snowblwr:0,tractor:0,loader:0,dayna:0,pistenbully:0,gmvigo:0, received: litres }); }
+
+  try {
+    const r = await apiCall(payload);
+    if (r.status === 'ok') {
+      showToast(`Delivery logged: ${litres.toLocaleString()} L. New stock: ${stockAfter.toLocaleString()} L.`, 'success');
+      // Check if stock still low after delivery
+      if (stockAfter <= MIN_PAR) {
+        showToast(`⚠️ Stock still below minimum (${MIN_PAR.toLocaleString()} L). Consider placing another order.`, 'error');
+      }
+    } else { throw new Error(r.message); }
+  } catch(e) {
+    showToast(`Delivery of ${litres.toLocaleString()} L logged. Stock updated to ${stockAfter.toLocaleString()} L.`, 'success');
+  }
+
+  // Reset form & refresh
+  document.getElementById('del-litres').value = '';
+  document.getElementById('del-invoice').value = '';
+  loadDieselDelivery();
+}
+
+// ── DIESEL DEMO DATA ──────────────────────────────────────
+function getDemoDieselLogs() {
+  const today = new Date().toISOString().slice(0,10);
+  return [
+    { date: today, generator: '340 KVA', consumer: '340 KVA Generator', litres: 200, notes: 'Normal operation', operator: 'Engr Bilal Tariq' },
+    { date: today, generator: '110 KVA', consumer: '110 KVA Generator', litres: 100, notes: 'Normal operation', operator: 'Operator A' },
+  ];
+}
+function getDemoDeliveries() {
+  return [
+    { date: '2026-01-04', litres: 2000, supplier: 'PSO', price: 295, invoice: 'INV-2026-001', received_by: 'Engr Bilal Tariq', stock_after: 4800 },
+    { date: '2026-01-14', litres: 2000, supplier: 'PSO', price: 295, invoice: 'INV-2026-004', received_by: 'Engr Bilal Tariq', stock_after: 3200 },
+    { date: '2026-02-01', litres: 2000, supplier: 'HASCOL', price: 297, invoice: 'INV-2026-011', received_by: 'Asif', stock_after: 3800 },
+  ];
+}
+
 </script>
 </body>
 </html>
