@@ -464,6 +464,7 @@
   <button onclick="switchTab('diesel-log')" style="border-left:2px solid var(--border);margin-left:6px;">⛽ Diesel Log</button>
   <button onclick="switchTab('diesel-overview')">⛽ Overview</button>
   <button onclick="switchTab('diesel-delivery')">⛽ Deliveries</button>
+  <button onclick="switchTab('diesel-config')">⛽ Diesel Config</button>
 </nav>
 
 <!-- ============================================================
@@ -1363,6 +1364,97 @@
   </div>
 </div>
 
+<!-- ============================================================
+     TAB: DIESEL CONFIG
+     ============================================================ -->
+<div id="tab-diesel-config" class="page">
+  <div class="section-title"><span class="accent">⛽</span> Diesel Config — Stock Adjustment</div>
+
+  <!-- Current stock display -->
+  <div class="stock-hero" id="dconfig-stock-hero" style="margin-bottom:24px;"></div>
+
+  <!-- Manual stock adjustment -->
+  <div class="section-title" style="font-size:16px;"><span class="accent">🔧</span> Manual Stock Correction</div>
+  <div class="config-panel" style="margin-bottom:24px;">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Use this when a physical dip measurement or tank inspection shows the actual stock differs from what the system calculates. This creates a correction entry that adjusts all stock displays immediately.</p>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Actual Stock on Ground (Litres)</label>
+        <input type="number" id="dc-actual-stock" placeholder="e.g. 3200" min="0" step="1">
+      </div>
+      <div class="form-group">
+        <label>Measurement Date</label>
+        <input type="date" id="dc-measure-date">
+      </div>
+      <div class="form-group">
+        <label>Reason for Adjustment</label>
+        <select id="dc-reason">
+          <option value="Physical dip measurement">Physical dip measurement</option>
+          <option value="Tank inspection">Tank inspection</option>
+          <option value="Audit correction">Audit correction</option>
+          <option value="Spillage / loss">Spillage / loss</option>
+          <option value="Unrecorded usage">Unrecorded usage</option>
+          <option value="Opening balance set">Opening balance set</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <input type="text" id="dc-notes" placeholder="e.g. Measured by Asif — tank gauge reading">
+      </div>
+      <div class="form-group">
+        <label>Adjusted By</label>
+        <input type="text" id="dc-adjusted-by" placeholder="Name">
+      </div>
+    </div>
+
+    <!-- Preview block — shows calculated vs actual before saving -->
+    <div id="dc-preview" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;display:none;">
+      <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Adjustment Preview</div>
+      <div style="display:flex;gap:32px;flex-wrap:wrap;">
+        <div><div style="font-size:11px;color:var(--muted);">System Calculated</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;" id="dc-prev-calc">—</div></div>
+        <div style="font-size:22px;color:var(--muted);align-self:center;">→</div>
+        <div><div style="font-size:11px;color:var(--muted);">Actual (After Adjustment)</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;color:var(--gold);" id="dc-prev-actual">—</div></div>
+        <div><div style="font-size:11px;color:var(--muted);">Variance</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;" id="dc-prev-diff">—</div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn-secondary" onclick="previewAdjustment()">👁 Preview Adjustment</button>
+      <button class="btn-submit" style="width:auto;padding:12px 28px;" onclick="applyAdjustment()">✅ Apply Stock Adjustment</button>
+    </div>
+  </div>
+
+  <!-- Min par level config -->
+  <div class="section-title" style="font-size:16px;"><span class="accent">⚠️</span> Minimum Par Level</div>
+  <div class="config-panel" style="margin-bottom:24px;">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">When stock falls to or below this level, an automatic email alert is sent to Asif (Electrical Dept) and the stock bar turns amber. Currently set to <strong id="dc-current-par">1,500 L</strong>.</p>
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+      <div class="form-group" style="flex:1;min-width:160px;">
+        <label>New Minimum Par (Litres)</label>
+        <input type="number" id="dc-new-par" placeholder="1500" min="100" step="100" value="1500">
+      </div>
+      <button class="btn-submit" style="width:auto;padding:12px 24px;" onclick="saveParLevel()">💾 Save Par Level</button>
+    </div>
+  </div>
+
+  <!-- Adjustment history -->
+  <div class="section-title" style="font-size:16px;"><span class="accent">📋</span> Adjustment History</div>
+  <div id="dc-history-loading" style="text-align:center;padding:30px;color:var(--muted);">
+    <div class="spinner" style="margin:0 auto 10px;"></div>Loading…
+  </div>
+  <div id="dc-history-content" style="display:none;">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Calculated Stock</th><th>Adjusted To</th><th>Variance</th><th>Reason</th><th>Notes</th><th>Adjusted By</th></tr>
+        </thead>
+        <tbody id="dc-history-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- PIN MODAL -->
 <div class="modal-overlay" id="pin-modal">
   <div class="modal">
@@ -1427,6 +1519,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('dl-from').value = d30.toISOString().slice(0,10);
   document.getElementById('dl-to').value = today;
   document.getElementById('del-date').value = today;
+  document.getElementById('dc-measure-date').value = today;
   updateClock();
   setInterval(updateClock, 1000);
 
@@ -1452,7 +1545,7 @@ function updateClock() {
 
 // ── TABS ────────────────────────────────────────────────────
 function switchTab(id) {
-  if ((id === 'maint-log' || id === 'maint-config' || id === 'sub-log' || id === 'operators') && !maintUnlocked) {
+  if ((id === 'maint-log' || id === 'maint-config' || id === 'sub-log' || id === 'operators' || id === 'diesel-config') && !maintUnlocked) {
     pinTarget = id;
     document.getElementById('pin-modal').classList.add('show');
     return;
@@ -1464,15 +1557,16 @@ function switchTab(id) {
     if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + id + "'")) b.classList.add('active');
   });
 
-  if (id === 'dashboard')    loadDashboard();
-  if (id === 'report')       loadReport();
-  if (id === 'sub-log')      loadSubLog();
-  if (id === 'maint-log')    loadMaintLog();
-  if (id === 'operators')    loadOperators();
-  if (id === 'maint-config') loadConfig();
+  if (id === 'dashboard')      loadDashboard();
+  if (id === 'report')         loadReport();
+  if (id === 'sub-log')        loadSubLog();
+  if (id === 'maint-log')      loadMaintLog();
+  if (id === 'operators')      loadOperators();
+  if (id === 'maint-config')   loadConfig();
   if (id === 'diesel-log')      loadDieselLog();
   if (id === 'diesel-overview') loadDieselOverview();
   if (id === 'diesel-delivery') loadDieselDelivery();
+  if (id === 'diesel-config')   loadDieselConfig();
 }
 
 // ── GEN SELECTOR ────────────────────────────────────────────
@@ -2236,7 +2330,145 @@ function getDemoOperators() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// DIESEL MODULE
+// DIESEL CONFIG MODULE
+// ═══════════════════════════════════════════════════════════
+
+// In-session adjustment log (appended to on each save)
+let dieselAdjustmentLog = [];
+
+async function loadDieselConfig() {
+  // Render current stock hero
+  renderStockHero('dconfig-stock-hero', getRunningStock());
+
+  // Update par level display
+  document.getElementById('dc-current-par').textContent = MIN_PAR.toLocaleString() + ' L';
+  document.getElementById('dc-new-par').value = MIN_PAR;
+
+  // Load adjustment history from GAS (or session)
+  document.getElementById('dc-history-loading').style.display = 'block';
+  document.getElementById('dc-history-content').style.display = 'none';
+
+  let history = [];
+  try {
+    const result = await apiCall({ action: 'getDieselAdjustments' });
+    if (result && result.status === 'ok') history = result.adjustments || [];
+    else throw new Error('no data');
+  } catch(e) {
+    history = dieselAdjustmentLog;
+  }
+
+  renderAdjustmentHistory(history);
+  document.getElementById('dc-history-loading').style.display = 'none';
+  document.getElementById('dc-history-content').style.display = 'block';
+}
+
+function previewAdjustment() {
+  const actual = parseFloat(document.getElementById('dc-actual-stock').value);
+  if (isNaN(actual) || actual < 0) {
+    showToast('Please enter a valid stock quantity in litres.', 'error');
+    return;
+  }
+
+  const calculated = getRunningStock();
+  const diff = actual - calculated;
+  const diffText = diff === 0 ? '± 0 L' : (diff > 0 ? '+' : '') + diff.toLocaleString() + ' L';
+  const diffColor = diff === 0 ? 'var(--muted)' : diff > 0 ? 'var(--green)' : 'var(--red)';
+
+  document.getElementById('dc-prev-calc').textContent   = calculated.toLocaleString() + ' L';
+  document.getElementById('dc-prev-actual').textContent = actual.toLocaleString() + ' L';
+  document.getElementById('dc-prev-diff').textContent   = diffText;
+  document.getElementById('dc-prev-diff').style.color   = diffColor;
+  document.getElementById('dc-preview').style.display   = 'block';
+}
+
+async function applyAdjustment() {
+  const actual = parseFloat(document.getElementById('dc-actual-stock').value);
+  const date   = document.getElementById('dc-measure-date').value;
+  const reason = document.getElementById('dc-reason').value;
+  const notes  = document.getElementById('dc-notes').value.trim();
+  const by     = document.getElementById('dc-adjusted-by').value.trim();
+
+  if (isNaN(actual) || actual < 0) { showToast('Please enter a valid stock quantity.', 'error'); return; }
+  if (!by)                          { showToast('Please enter who is making this adjustment.', 'error'); return; }
+
+  const calculated = getRunningStock();
+  const variance   = actual - calculated;
+
+  if (!confirm(`Apply stock correction?\n\nSystem shows: ${calculated.toLocaleString()} L\nActual on ground: ${actual.toLocaleString()} L\nVariance: ${variance > 0 ? '+' : ''}${variance.toLocaleString()} L\n\nAll stock displays will update immediately.`)) return;
+
+  // Apply the override — this becomes the new base for getRunningStock()
+  DIESEL_STOCK_OVERRIDE = { litres: actual, setAt: date, reason, by };
+
+  // Log the adjustment entry
+  const entry = { date, calculated, adjusted_to: actual, variance, reason, notes, by };
+  dieselAdjustmentLog.unshift(entry);
+
+  // Persist to GAS
+  try {
+    await apiCall({ action: 'saveDieselAdjustment', ...entry });
+  } catch(e) {
+    // Already applied locally, GAS sync optional
+  }
+
+  showToast(`Stock adjusted to ${actual.toLocaleString()} L. All displays updated.`, 'success');
+
+  // Refresh all diesel displays that are currently visible or will be loaded
+  renderStockHero('dconfig-stock-hero', getRunningStock());
+  if (document.getElementById('stock-hero-block').innerHTML)     renderStockHero('stock-hero-block',     getRunningStock());
+  if (document.getElementById('delivery-stock-hero').innerHTML)  renderStockHero('delivery-stock-hero',  getRunningStock());
+
+  // Clear form
+  document.getElementById('dc-actual-stock').value = '';
+  document.getElementById('dc-notes').value = '';
+  document.getElementById('dc-adjusted-by').value = '';
+  document.getElementById('dc-preview').style.display = 'none';
+
+  // Re-render adjustment history
+  renderAdjustmentHistory(dieselAdjustmentLog);
+}
+
+function renderAdjustmentHistory(entries) {
+  if (!entries.length) {
+    document.getElementById('dc-history-body').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">No adjustments have been made yet.</td></tr>';
+    return;
+  }
+  let tbody = '';
+  entries.forEach(e => {
+    const v = e.variance || (e.adjusted_to - e.calculated);
+    const vText = v === 0 ? '± 0 L' : (v > 0 ? '+' : '') + Number(v).toLocaleString() + ' L';
+    const vColor = v === 0 ? 'var(--muted)' : v > 0 ? 'var(--green)' : 'var(--red)';
+    tbody += `<tr>
+      <td>${e.date}</td>
+      <td>${Number(e.calculated || 0).toLocaleString()} L</td>
+      <td style="font-weight:700;color:var(--gold);">${Number(e.adjusted_to || 0).toLocaleString()} L</td>
+      <td style="font-weight:700;color:${vColor};">${vText}</td>
+      <td>${e.reason || '—'}</td>
+      <td style="color:var(--muted);font-size:11px;">${e.notes || ''}</td>
+      <td>${e.by || e.adjusted_by || '—'}</td>
+    </tr>`;
+  });
+  document.getElementById('dc-history-body').innerHTML = tbody;
+}
+
+function saveParLevel() {
+  const newPar = parseInt(document.getElementById('dc-new-par').value);
+  if (!newPar || newPar < 100) { showToast('Please enter a valid par level (minimum 100 L).', 'error'); return; }
+
+  // MIN_PAR is const so we shadow it with a module-level variable approach
+  // Re-assign the display reference and gate logic uses this variable
+  window.DIESEL_PAR_OVERRIDE = newPar;
+  document.getElementById('dc-current-par').textContent = newPar.toLocaleString() + ' L';
+
+  // Refresh stock hero to reflect new par colour threshold
+  renderStockHero('dconfig-stock-hero', getRunningStock());
+  if (document.getElementById('stock-hero-block').innerHTML)    renderStockHero('stock-hero-block',    getRunningStock());
+  if (document.getElementById('delivery-stock-hero').innerHTML) renderStockHero('delivery-stock-hero', getRunningStock());
+
+  showToast(`Minimum par level updated to ${newPar.toLocaleString()} L.`, 'success');
+}
+
+
 // ═══════════════════════════════════════════════════════════
 
 // ── Historical seed data (from Excel 2024-2026) ───────────
@@ -2271,15 +2503,38 @@ function dieselRowTotal(r) {
          r.snowblwr + r.tractor + r.loader + r.dayna + r.pistenbully + r.gmvigo;
 }
 
+// Manual stock override — set by Diesel Config adjustment, persists in session
+// Format: { litres: number, setAt: ISO date string, reason: string }
+let DIESEL_STOCK_OVERRIDE = null;
+
 function getRunningStock() {
+  // If a manual correction has been applied, use it as the base and
+  // subtract any usage logged AFTER that correction date.
+  if (DIESEL_STOCK_OVERRIDE) {
+    let usageAfter = 0;
+    const cutoff = DIESEL_STOCK_OVERRIDE.setAt;
+    DIESEL_HISTORY.forEach(r => {
+      // Only subtract usage from months after the override date
+      const [mStr, yStr] = r.month.split(' ');
+      const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+      const rDate = new Date(parseInt(yStr), months[mStr] || 0, 1).toISOString().slice(0,10);
+      if (rDate > cutoff) usageAfter += dieselRowTotal(r) - r.received;
+    });
+    return Math.max(0, DIESEL_STOCK_OVERRIDE.litres - usageAfter);
+  }
   let stock = 0;
   DIESEL_HISTORY.forEach(r => { stock += r.received - dieselRowTotal(r); });
   return Math.max(0, stock);
 }
 
+function getEffectivePar() {
+  return (window.DIESEL_PAR_OVERRIDE != null) ? window.DIESEL_PAR_OVERRIDE : MIN_PAR;
+}
+
 function stockClass(litres) {
-  if (litres <= 0) return 'stock-crit';
-  if (litres <= MIN_PAR) return 'stock-warn';
+  const par = getEffectivePar();
+  if (litres <= 0)   return 'stock-crit';
+  if (litres <= par) return 'stock-warn';
   return 'stock-ok';
 }
 
@@ -2289,21 +2544,22 @@ function stockBarPct(litres) {
 }
 
 function renderStockHero(elId, litres) {
+  const par = getEffectivePar();
   const cls = stockClass(litres);
   const pct = stockBarPct(litres);
-  const statusText = litres <= 0 ? '🔴 CRITICAL — OUT OF STOCK' : litres <= MIN_PAR ? '⚠️ LOW — Order Required' : '✅ Adequate Stock';
-  const statusColor = litres <= 0 ? 'var(--red)' : litres <= MIN_PAR ? 'var(--amber)' : 'var(--green)';
+  const statusText  = litres <= 0 ? '🔴 CRITICAL — OUT OF STOCK' : litres <= par ? '⚠️ LOW — Order Required' : '✅ Adequate Stock';
+  const statusColor = litres <= 0 ? 'var(--red)' : litres <= par ? 'var(--amber)' : 'var(--green)';
   document.getElementById(elId).innerHTML = `
     <div>
       <div class="sh-label">Current Diesel Stock</div>
       <div class="sh-val" style="color:${statusColor}">${litres.toLocaleString()} L</div>
       <div class="sh-sub" style="color:${statusColor};font-weight:600;">${statusText}</div>
-      <div class="sh-sub">Minimum par level: ${MIN_PAR.toLocaleString()} L &nbsp;·&nbsp; Alert to: asif@malamjabbaresort.com</div>
+      <div class="sh-sub">Minimum par level: ${par.toLocaleString()} L &nbsp;·&nbsp; Alert to: asif@malamjabbaresort.com</div>
     </div>
     <div class="sh-bar-wrap">
       <div class="sh-label">Stock Level</div>
       <div class="diesel-stock-bar"><div class="diesel-stock-fill ${cls}" style="width:${pct}%"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px;"><span>0 L</span><span>Min: ${MIN_PAR.toLocaleString()} L</span><span>10,000 L</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px;"><span>0 L</span><span>Min: ${par.toLocaleString()} L</span><span>10,000 L</span></div>
     </div>`;
 }
 
