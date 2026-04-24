@@ -1670,6 +1670,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadDashboard();
   loadReport();
+  initLiveStock(); // fetch persistent stock level from GAS — survives page reloads
 });
 
 function updateClock() {
@@ -2533,8 +2534,9 @@ async function applyAdjustment() {
 
   if (!confirm(`Apply stock correction?\n\nSystem shows: ${calculated.toLocaleString()} L\nActual on ground: ${actual.toLocaleString()} L\nVariance: ${variance > 0 ? '+' : ''}${variance.toLocaleString()} L\n\nAll stock displays will update immediately.`)) return;
 
-  // Apply the override — this becomes the new base for getRunningStock()
-  DIESEL_STOCK_OVERRIDE = { litres: actual, setAt: date, reason, by };
+  // Apply the override — this becomes the new live stock for all displays and survives session
+  DIESEL_STOCK_OVERRIDE = actual;
+  setLiveStock(actual);
 
   // Log the adjustment entry
   const entry = { date, calculated, adjusted_to: actual, variance, reason, notes, by };
@@ -2641,28 +2643,53 @@ function dieselRowTotal(r) {
          r.snowblwr + r.tractor + r.loader + r.dayna + r.pistenbully + r.gmvigo;
 }
 
-// Manual stock override — set by Diesel Config adjustment, persists in session
-// Format: { litres: number, setAt: ISO date string, reason: string }
-let DIESEL_STOCK_OVERRIDE = null;
+// ── LIVE STOCK STATE ─────────────────────────────────────
+// This is the single source of truth for current stock.
+// It is fetched from GAS on page load (from the Diesel_Stock_Ledger sheet)
+// and mutated in-memory for immediate UI updates. Every mutation is also
+// written back to GAS so it survives page reloads.
+let liveStockLitres = null;          // null = not yet loaded from server
+let liveStockLoading = false;
 
-function getRunningStock() {
-  // If a manual correction has been applied, use it as the base and
-  // subtract any usage logged AFTER that correction date.
-  if (DIESEL_STOCK_OVERRIDE) {
-    let usageAfter = 0;
-    const cutoff = DIESEL_STOCK_OVERRIDE.setAt;
-    DIESEL_HISTORY.forEach(r => {
-      // Only subtract usage from months after the override date
-      const [mStr, yStr] = r.month.split(' ');
-      const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
-      const rDate = new Date(parseInt(yStr), months[mStr] || 0, 1).toISOString().slice(0,10);
-      if (rDate > cutoff) usageAfter += dieselRowTotal(r) - r.received;
-    });
-    return Math.max(0, DIESEL_STOCK_OVERRIDE.litres - usageAfter);
+async function initLiveStock() {
+  if (liveStockLoading) return;
+  liveStockLoading = true;
+  try {
+    const result = await apiCall({ action: 'getCurrentStock' });
+    if (result && result.status === 'ok' && typeof result.stock === 'number') {
+      liveStockLitres = result.stock;
+    } else {
+      liveStockLitres = getStockFromSeedHistory(); // fallback
+    }
+  } catch(e) {
+    liveStockLitres = getStockFromSeedHistory(); // offline fallback
   }
+  liveStockLoading = false;
+  refreshAllStockHeroes();
+}
+
+// Seed-history fallback — used only when GAS is unreachable
+function getStockFromSeedHistory() {
   let stock = 0;
   DIESEL_HISTORY.forEach(r => { stock += r.received - dieselRowTotal(r); });
   return Math.max(0, stock);
+}
+
+// Manual stock override — set by Diesel Config adjustment
+let DIESEL_STOCK_OVERRIDE = null;
+
+function getRunningStock() {
+  // If a manual override was applied this session, use it
+  if (DIESEL_STOCK_OVERRIDE !== null) return Math.max(0, DIESEL_STOCK_OVERRIDE);
+  // Use the live figure fetched from the server
+  if (liveStockLitres !== null) return Math.max(0, liveStockLitres);
+  // Last resort: calculate from seed history
+  return getStockFromSeedHistory();
+}
+
+function setLiveStock(newValue) {
+  liveStockLitres = Math.max(0, newValue);
+  if (DIESEL_STOCK_OVERRIDE !== null) DIESEL_STOCK_OVERRIDE = liveStockLitres;
 }
 
 function getEffectivePar() {
@@ -2936,14 +2963,8 @@ async function submitDelivery() {
   if (!litres || litres <= 0) { showToast('Please enter a valid litres amount.', 'error'); return; }
   if (!supplier)              { showToast('Please enter the supplier name.', 'error'); return; }
 
-  // Step 1: mutate DIESEL_HISTORY FIRST so getRunningStock() is correct from here on
-  const mLabel = new Date().toLocaleString('en-GB', {month:'short'}) + ' ' + new Date().getFullYear();
-  const existing = DIESEL_HISTORY.find(r => r.month === mLabel);
-  if (existing) { existing.received += litres; }
-  else { DIESEL_HISTORY.push({ month: mLabel, gen340:0,gen110:0,gen500:0,inn45:0,inn33:0,gv:0,snowblwr:0,tractor:0,loader:0,dayna:0,pistenbully:0,gmvigo:0, received: litres }); }
-
-  // Step 2: now get the correct post-delivery stock
-  const stockAfter = getRunningStock();
+  // Step 1: calculate new stock BEFORE writing to GAS
+  const stockAfter = getRunningStock() + litres;
 
   const payload = {
     action: 'submitDieselDelivery',
@@ -2954,20 +2975,29 @@ async function submitDelivery() {
 
   try {
     const r = await apiCall(payload);
-    if (r.status === 'ok') {
-      showToast(`Delivery logged: ${litres.toLocaleString()} L. New stock: ${stockAfter.toLocaleString()} L.`, 'success');
-      if (stockAfter <= getEffectivePar()) {
-        showToast(`⚠️ Stock still below minimum (${getEffectivePar().toLocaleString()} L). Consider placing another order.`, 'error');
-      }
-    } else { throw new Error(r.message); }
+    if (r.status !== 'ok') throw new Error(r.message);
   } catch(e) {
-    showToast(`Delivery of ${litres.toLocaleString()} L logged. New stock: ${stockAfter.toLocaleString()} L.`, 'success');
+    // Continue — update locally even if GAS fails
   }
 
-  // Step 3: refresh all stock displays with correct value
+  // Step 2: update live stock state — this persists across the session
+  setLiveStock(stockAfter);
+
+  // Step 3: also update DIESEL_HISTORY received for the Overview charts
+  const mLabel = new Date().toLocaleString('en-GB', {month:'short'}) + ' ' + new Date().getFullYear();
+  const existing = DIESEL_HISTORY.find(r => r.month === mLabel);
+  if (existing) { existing.received += litres; }
+  else { DIESEL_HISTORY.push({ month: mLabel, gen340:0,gen110:0,gen500:0,inn45:0,inn33:0,gv:0,snowblwr:0,tractor:0,loader:0,dayna:0,pistenbully:0,gmvigo:0, received: litres }); }
+
+  // Step 4: refresh all displays
   refreshAllStockHeroes();
 
-  // Reset form
+  if (stockAfter <= getEffectivePar()) {
+    showToast(`⚠️ Delivery logged but stock (${stockAfter.toLocaleString()} L) is still below minimum par.`, 'error');
+  } else {
+    showToast(`Delivery of ${litres.toLocaleString()} L logged. Stock: ${stockAfter.toLocaleString()} L.`, 'success');
+  }
+
   document.getElementById('del-litres').value = '';
   document.getElementById('del-invoice').value = '';
   loadDieselDelivery();
@@ -3040,13 +3070,14 @@ async function submitIssue() {
   if (!litres || litres <= 0) { showToast('Please enter a valid litres amount.', 'error'); return; }
   if (!by)                    { showToast('Please enter who is issuing the diesel.', 'error'); return; }
 
+  // Step 1: validate stock is sufficient
   const currentStock = getRunningStock();
   if (litres > currentStock) {
     showToast(`Cannot issue ${litres.toLocaleString()} L — only ${currentStock.toLocaleString()} L in stock.`, 'error');
     return;
   }
 
-  // Map consumer to DIESEL_HISTORY key so stock recalculates correctly
+  // Consumer key map for Overview chart updates
   const consumerKeyMap = {
     '340 KVA Generator':      'gen340',
     '110 KVA Generator':      'gen110',
@@ -3062,23 +3093,23 @@ async function submitIssue() {
     'GM Vigo':                'gmvigo',
   };
 
-  // Step 1: deduct from DIESEL_HISTORY for correct running stock
+  // Step 2: get correct post-issue stock and persist it
+  const stockAfter = Math.max(0, getRunningStock() - litres);
+  setLiveStock(stockAfter);
+
+  // Step 3: also update DIESEL_HISTORY for Overview charts
   const mLabel = new Date().toLocaleString('en-GB', {month:'short'}) + ' ' + new Date().getFullYear();
   const histRow = DIESEL_HISTORY.find(r => r.month === mLabel);
   const histKey = consumerKeyMap[consumer] || null;
   if (histRow && histKey) {
     histRow[histKey] = (histRow[histKey] || 0) + litres;
   } else {
-    // Create a new month row if needed
     const newRow = { month: mLabel, gen340:0,gen110:0,gen500:0,inn45:0,inn33:0,gv:0,snowblwr:0,tractor:0,loader:0,dayna:0,pistenbully:0,gmvigo:0, received:0 };
     if (histKey) newRow[histKey] = litres;
     DIESEL_HISTORY.push(newRow);
   }
 
-  // Step 2: get correct post-issue stock
-  const stockAfter = getRunningStock();
-
-  // Step 3: log to GAS
+  // Step 4: log to GAS
   const payload = {
     action: 'submitDieselIssue',
     date, consumer, litres, issued_by: by, notes, stock_after: stockAfter
