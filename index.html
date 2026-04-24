@@ -1339,7 +1339,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Date</th><th>Generator / Unit</th><th>Consumer</th><th>Litres Used</th><th>Purpose / Notes</th><th>Logged By</th></tr>
+          <tr><th>Date</th><th>Source</th><th>Consumer / Unit</th><th>Litres Used</th><th>Purpose / Notes</th><th>Logged By</th></tr>
         </thead>
         <tbody id="dl-body"></tbody>
       </table>
@@ -2870,27 +2870,67 @@ async function loadDieselLog() {
 
   let logs = [];
   try {
-    const result = await apiCall({ action: 'getDieselLog', consumer, from, to });
-    if (result && result.status === 'ok') logs = result.logs || [];
-    else throw new Error('no data');
+    // Fetch from both sources in parallel
+    const [issuesResult, checkLogResult] = await Promise.all([
+      apiCallWithTimeout({ action: 'getDieselIssues', consumer, from, to }, 12000).catch(() => null),
+      apiCallWithTimeout({ action: 'getDieselLog',   consumer, from, to }, 12000).catch(() => null),
+    ]);
+
+    // Diesel_Issues rows (manual issuances and historical import)
+    const issueRows = (issuesResult && issuesResult.status === 'ok')
+      ? (issuesResult.issues || []).map(r => ({
+          date:     r.date,
+          source:   'Issue',
+          consumer: r.consumer,
+          litres:   r.litres,
+          notes:    r.notes || '',
+          logged_by:r.by || '—',
+        }))
+      : [];
+
+    // Diesel_Log rows (from daily check submissions)
+    const checkRows = (checkLogResult && checkLogResult.status === 'ok')
+      ? (checkLogResult.logs || []).map(r => ({
+          date:     r.date,
+          source:   'Check',
+          consumer: r.consumer || r.generator || '—',
+          litres:   r.litres,
+          notes:    r.notes || '',
+          logged_by:r.operator || '—',
+        }))
+      : [];
+
+    // Merge and sort newest first
+    logs = [...issueRows, ...checkRows].sort((a, b) => b.date.localeCompare(a.date));
+
+    // Apply consumer filter locally if not already applied server-side
+    if (consumer) logs = logs.filter(r => r.consumer === consumer || r.consumer.includes(consumer));
+
   } catch(e) {
     logs = getDemoDieselLogs();
   }
 
   document.getElementById('dl-count').textContent = `${logs.length} record${logs.length !== 1 ? 's' : ''}`;
+
   let tbody = '';
   logs.forEach(r => {
-    const genBadge = r.generator ? `<span class="badge badge-blue" style="margin-right:4px;">${r.generator}</span>` : '';
+    const sourceBadge = r.source === 'Issue'
+      ? `<span class="badge badge-amber" style="margin-right:6px;">Issued</span>`
+      : `<span class="badge badge-blue" style="margin-right:6px;">Check</span>`;
+    const consumerBadge = r.consumer && r.consumer !== '—'
+      ? `<span class="badge" style="background:#f1f5f9;color:var(--text);margin-right:4px;">${r.consumer}</span>`
+      : '—';
     tbody += `<tr>
       <td>${r.date}</td>
-      <td>${genBadge}</td>
-      <td>${r.consumer || r.generator || '—'}</td>
+      <td>${sourceBadge}</td>
+      <td>${consumerBadge}</td>
       <td style="font-weight:700;color:var(--amber);">${r.litres || 0} L</td>
       <td style="color:var(--muted);font-size:11px;">${r.notes || ''}</td>
-      <td style="color:var(--muted);font-size:11px;">${r.operator || '—'}</td>
+      <td style="color:var(--muted);font-size:11px;">${r.logged_by || '—'}</td>
     </tr>`;
   });
-  document.getElementById('dl-body').innerHTML = tbody || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">No diesel records found for this filter.</td></tr>';
+  document.getElementById('dl-body').innerHTML = tbody ||
+    '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">No diesel records found for this filter.</td></tr>';
 
   document.getElementById('diesel-log-loading').style.display = 'none';
   document.getElementById('diesel-log-content').style.display = 'block';
