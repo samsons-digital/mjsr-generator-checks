@@ -1316,7 +1316,7 @@
   <div class="stock-hero" id="delivery-stock-hero" style="margin-bottom:20px;"></div>
 
   <!-- Log new delivery -->
-  <div class="section-title" style="font-size:16px;"><span class="accent">➕</span> Log New Delivery</div>
+  <div class="section-title" style="font-size:16px;"><span class="accent">📥</span> Log New Delivery — Stock In</div>
   <div class="config-panel" style="margin-bottom:24px;">
     <div class="form-grid">
       <div class="form-group">
@@ -1344,7 +1344,83 @@
         <input type="text" id="del-received-by" placeholder="Name">
       </div>
     </div>
-    <button class="btn-submit" style="margin-top:10px;" onclick="submitDelivery()">🚚 Log Delivery</button>
+    <button class="btn-submit" style="margin-top:10px;" onclick="submitDelivery()">📥 Log Delivery</button>
+  </div>
+
+  <!-- Issue diesel to department -->
+  <div class="section-title" style="font-size:16px;"><span class="accent">📤</span> Issue Diesel — Stock Out to Department</div>
+  <div class="config-panel" style="margin-bottom:24px;">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Record diesel issued from the main tank to any consumer. This deducts from the running stock immediately.</p>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Issue Date</label>
+        <input type="date" id="issue-date">
+      </div>
+      <div class="form-group">
+        <label>Issued To (Consumer)</label>
+        <select id="issue-consumer">
+          <option value="">— Select consumer —</option>
+          <optgroup label="MJSR Generators">
+            <option value="340 KVA Generator">340 KVA Generator (P126Ti)</option>
+            <option value="110 KVA Generator">110 KVA Generator (2428-1500)</option>
+            <option value="500 KVA Generator">500 KVA Generator (DC13 072A)</option>
+          </optgroup>
+          <optgroup label="Samsons Inn">
+            <option value="Samsons Inn 45 KVA">Samsons Inn — 45 KVA Generator</option>
+            <option value="Samsons Inn 33 KVA">Samsons Inn — 33 KVA Generator</option>
+          </optgroup>
+          <optgroup label="Green Valley">
+            <option value="Green Valley Generator">Green Valley — 45 KVA Generator</option>
+          </optgroup>
+          <optgroup label="Vehicles & Machinery">
+            <option value="PistenBully">PistenBully</option>
+            <option value="Snow Blower">Snow Blower</option>
+            <option value="Tractor 360">Tractor 360</option>
+            <option value="Loader (FL-01)">Loader (FL-01)</option>
+            <option value="Dayna AK1214">Dayna AK1214</option>
+            <option value="GM Vigo">GM Vigo</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="Other">Other (specify in notes)</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Litres Issued</label>
+        <input type="number" id="issue-litres" placeholder="e.g. 200" min="1" step="1">
+      </div>
+      <div class="form-group">
+        <label>Issued By</label>
+        <input type="text" id="issue-by" placeholder="Name">
+      </div>
+      <div class="form-group full">
+        <label>Purpose / Notes</label>
+        <input type="text" id="issue-notes" placeholder="e.g. Weekly refuel, standby top-up, special request…">
+      </div>
+    </div>
+    <!-- Live stock preview -->
+    <div id="issue-preview" style="background:#fff8e1;border:1px solid #fcd34d;border-radius:8px;padding:12px 14px;margin:12px 0;display:none;">
+      <span style="font-size:12px;color:var(--muted);">Stock after this issue:&nbsp;</span>
+      <span id="issue-stock-after" style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--amber);"></span>
+      <span id="issue-low-warn" style="font-size:12px;color:var(--red);margin-left:10px;display:none;">⚠️ Below minimum par</span>
+    </div>
+    <button class="btn-submit" style="margin-top:10px;background:var(--amber);color:#fff;" onclick="submitIssue()">📤 Issue Diesel</button>
+  </div>
+
+  <!-- Issuance history -->
+  <div class="section-title" style="font-size:16px;"><span class="accent">📤</span> Issuance History</div>
+  <div id="issue-loading" style="text-align:center;padding:20px;color:var(--muted);display:none;">
+    <div class="spinner" style="margin:0 auto 8px;"></div>Loading…
+  </div>
+  <div id="issue-content">
+    <div class="table-wrap" style="margin-bottom:24px;">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Issued To</th><th>Litres</th><th>Stock After</th><th>Purpose</th><th>Issued By</th></tr>
+        </thead>
+        <tbody id="issue-body"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Delivery history -->
@@ -1520,6 +1596,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('dl-to').value = today;
   document.getElementById('del-date').value = today;
   document.getElementById('dc-measure-date').value = today;
+  document.getElementById('issue-date').value = today;
   updateClock();
   setInterval(updateClock, 1000);
 
@@ -2564,6 +2641,14 @@ function renderStockHero(elId, litres) {
     </div>`;
 }
 
+function refreshAllStockHeroes() {
+  const s = getRunningStock();
+  ['stock-hero-block','delivery-stock-hero','dconfig-stock-hero'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.closest('.page')) renderStockHero(id, s);
+  });
+}
+
 // ── DIESEL LOG TAB ────────────────────────────────────────
 async function loadDieselLog() {
   document.getElementById('diesel-log-loading').style.display = 'block';
@@ -2791,8 +2876,14 @@ async function submitDelivery() {
   if (!litres || litres <= 0) { showToast('Please enter a valid litres amount.', 'error'); return; }
   if (!supplier)              { showToast('Please enter the supplier name.', 'error'); return; }
 
-  const currentStock = getRunningStock();
-  const stockAfter   = currentStock + litres;
+  // Step 1: mutate DIESEL_HISTORY FIRST so getRunningStock() is correct from here on
+  const mLabel = new Date().toLocaleString('en-GB', {month:'short'}) + ' ' + new Date().getFullYear();
+  const existing = DIESEL_HISTORY.find(r => r.month === mLabel);
+  if (existing) { existing.received += litres; }
+  else { DIESEL_HISTORY.push({ month: mLabel, gen340:0,gen110:0,gen500:0,inn45:0,inn33:0,gv:0,snowblwr:0,tractor:0,loader:0,dayna:0,pistenbully:0,gmvigo:0, received: litres }); }
+
+  // Step 2: now get the correct post-delivery stock
+  const stockAfter = getRunningStock();
 
   const payload = {
     action: 'submitDieselDelivery',
@@ -2801,30 +2892,146 @@ async function submitDelivery() {
     stock_after: stockAfter
   };
 
-  // Optimistically update historical seed
-  const today = new Date();
-  const mLabel = today.toLocaleString('en-GB',{month:'short'}) + ' ' + today.getFullYear();
-  const existing = DIESEL_HISTORY.find(r => r.month === mLabel);
-  if (existing) { existing.received += litres; }
-  else { DIESEL_HISTORY.push({ month: mLabel, gen340:0,gen110:0,gen500:0,inn45:0,inn33:0,gv:0,snowblwr:0,tractor:0,loader:0,dayna:0,pistenbully:0,gmvigo:0, received: litres }); }
-
   try {
     const r = await apiCall(payload);
     if (r.status === 'ok') {
       showToast(`Delivery logged: ${litres.toLocaleString()} L. New stock: ${stockAfter.toLocaleString()} L.`, 'success');
-      // Check if stock still low after delivery
-      if (stockAfter <= MIN_PAR) {
-        showToast(`⚠️ Stock still below minimum (${MIN_PAR.toLocaleString()} L). Consider placing another order.`, 'error');
+      if (stockAfter <= getEffectivePar()) {
+        showToast(`⚠️ Stock still below minimum (${getEffectivePar().toLocaleString()} L). Consider placing another order.`, 'error');
       }
     } else { throw new Error(r.message); }
   } catch(e) {
-    showToast(`Delivery of ${litres.toLocaleString()} L logged. Stock updated to ${stockAfter.toLocaleString()} L.`, 'success');
+    showToast(`Delivery of ${litres.toLocaleString()} L logged. New stock: ${stockAfter.toLocaleString()} L.`, 'success');
   }
 
-  // Reset form & refresh
+  // Step 3: refresh all stock displays with correct value
+  refreshAllStockHeroes();
+
+  // Reset form
   document.getElementById('del-litres').value = '';
   document.getElementById('del-invoice').value = '';
   loadDieselDelivery();
+}
+
+// ── DIESEL ISSUANCE ───────────────────────────────────────
+let issuanceLog = []; // in-session cache
+
+// Wire preview update whenever litres field changes
+document.addEventListener('DOMContentLoaded', () => {
+  const litresEl = document.getElementById('issue-litres');
+  if (litresEl) {
+    litresEl.addEventListener('input', updateIssuePreview);
+  }
+});
+
+function updateIssuePreview() {
+  const litres = parseFloat(document.getElementById('issue-litres').value) || 0;
+  if (litres <= 0) { document.getElementById('issue-preview').style.display = 'none'; return; }
+  const stockAfter = Math.max(0, getRunningStock() - litres);
+  const par = getEffectivePar();
+  document.getElementById('issue-stock-after').textContent = stockAfter.toLocaleString() + ' L';
+  document.getElementById('issue-low-warn').style.display = stockAfter <= par ? 'inline' : 'none';
+  document.getElementById('issue-preview').style.display = 'block';
+}
+
+async function submitIssue() {
+  const date     = document.getElementById('issue-date').value;
+  const consumer = document.getElementById('issue-consumer').value;
+  const litres   = parseFloat(document.getElementById('issue-litres').value);
+  const by       = document.getElementById('issue-by').value.trim();
+  const notes    = document.getElementById('issue-notes').value.trim();
+
+  if (!consumer)              { showToast('Please select a consumer.', 'error'); return; }
+  if (!litres || litres <= 0) { showToast('Please enter a valid litres amount.', 'error'); return; }
+  if (!by)                    { showToast('Please enter who is issuing the diesel.', 'error'); return; }
+
+  const currentStock = getRunningStock();
+  if (litres > currentStock) {
+    showToast(`Cannot issue ${litres.toLocaleString()} L — only ${currentStock.toLocaleString()} L in stock.`, 'error');
+    return;
+  }
+
+  // Map consumer to DIESEL_HISTORY key so stock recalculates correctly
+  const consumerKeyMap = {
+    '340 KVA Generator':      'gen340',
+    '110 KVA Generator':      'gen110',
+    '500 KVA Generator':      'gen500',
+    'Samsons Inn 45 KVA':     'inn45',
+    'Samsons Inn 33 KVA':     'inn33',
+    'Green Valley Generator': 'gv',
+    'PistenBully':            'pistenbully',
+    'Snow Blower':            'snowblwr',
+    'Tractor 360':            'tractor',
+    'Loader (FL-01)':         'loader',
+    'Dayna AK1214':           'dayna',
+    'GM Vigo':                'gmvigo',
+  };
+
+  // Step 1: deduct from DIESEL_HISTORY for correct running stock
+  const mLabel = new Date().toLocaleString('en-GB', {month:'short'}) + ' ' + new Date().getFullYear();
+  const histRow = DIESEL_HISTORY.find(r => r.month === mLabel);
+  const histKey = consumerKeyMap[consumer] || null;
+  if (histRow && histKey) {
+    histRow[histKey] = (histRow[histKey] || 0) + litres;
+  } else {
+    // Create a new month row if needed
+    const newRow = { month: mLabel, gen340:0,gen110:0,gen500:0,inn45:0,inn33:0,gv:0,snowblwr:0,tractor:0,loader:0,dayna:0,pistenbully:0,gmvigo:0, received:0 };
+    if (histKey) newRow[histKey] = litres;
+    DIESEL_HISTORY.push(newRow);
+  }
+
+  // Step 2: get correct post-issue stock
+  const stockAfter = getRunningStock();
+
+  // Step 3: log to GAS
+  const payload = {
+    action: 'submitDieselIssue',
+    date, consumer, litres, issued_by: by, notes, stock_after: stockAfter
+  };
+
+  try {
+    await apiCall(payload);
+  } catch(e) {
+    // Local-only if GAS unreachable
+  }
+
+  // Step 4: add to in-session log and re-render
+  issuanceLog.unshift({ date, consumer, litres, stock_after: stockAfter, notes, by });
+  renderIssuanceTable(issuanceLog);
+
+  // Step 5: refresh all stock heroes
+  refreshAllStockHeroes();
+
+  // Alert if below par
+  if (stockAfter <= getEffectivePar()) {
+    showToast(`⚠️ Stock now ${stockAfter.toLocaleString()} L — below minimum par. Order required.`, 'error');
+  } else {
+    showToast(`Issued ${litres.toLocaleString()} L to ${consumer}. Stock: ${stockAfter.toLocaleString()} L.`, 'success');
+  }
+
+  // Clear form
+  document.getElementById('issue-litres').value = '';
+  document.getElementById('issue-notes').value = '';
+  document.getElementById('issue-by').value = '';
+  document.getElementById('issue-consumer').value = '';
+  document.getElementById('issue-preview').style.display = 'none';
+}
+
+function renderIssuanceTable(rows) {
+  let tbody = '';
+  rows.forEach(r => {
+    const stockCls = (r.stock_after || 0) <= getEffectivePar() ? 'color:var(--amber);font-weight:700;' : '';
+    tbody += `<tr>
+      <td>${r.date}</td>
+      <td style="font-weight:600;">${r.consumer}</td>
+      <td style="font-weight:700;color:var(--red);">−${(r.litres||0).toLocaleString()} L</td>
+      <td style="${stockCls}">${(r.stock_after||0).toLocaleString()} L</td>
+      <td style="color:var(--muted);font-size:11px;">${r.notes || ''}</td>
+      <td style="color:var(--muted);font-size:11px;">${r.by || r.issued_by || '—'}</td>
+    </tr>`;
+  });
+  document.getElementById('issue-body').innerHTML = tbody ||
+    '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No issuances logged yet this session.</td></tr>';
 }
 
 // ── DIESEL DEMO DATA ──────────────────────────────────────
