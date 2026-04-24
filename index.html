@@ -464,6 +464,7 @@
   <button onclick="switchTab('diesel-log')" style="border-left:2px solid var(--border);margin-left:6px;">⛽ Diesel Log</button>
   <button onclick="switchTab('diesel-overview')">⛽ Overview</button>
   <button onclick="switchTab('diesel-delivery')">⛽ Deliveries</button>
+  <button onclick="switchTab('diesel-out')">⛽ Diesel Out</button>
   <button onclick="switchTab('diesel-config')">⛽ Diesel Config</button>
 </nav>
 
@@ -1347,82 +1348,6 @@
     <button class="btn-submit" style="margin-top:10px;" onclick="submitDelivery()">📥 Log Delivery</button>
   </div>
 
-  <!-- Issue diesel to department -->
-  <div class="section-title" style="font-size:16px;"><span class="accent">📤</span> Issue Diesel — Stock Out to Department</div>
-  <div class="config-panel" style="margin-bottom:24px;">
-    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Record diesel issued from the main tank to any consumer. This deducts from the running stock immediately.</p>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Issue Date</label>
-        <input type="date" id="issue-date">
-      </div>
-      <div class="form-group">
-        <label>Issued To (Consumer)</label>
-        <select id="issue-consumer">
-          <option value="">— Select consumer —</option>
-          <optgroup label="MJSR Generators">
-            <option value="340 KVA Generator">340 KVA Generator (P126Ti)</option>
-            <option value="110 KVA Generator">110 KVA Generator (2428-1500)</option>
-            <option value="500 KVA Generator">500 KVA Generator (DC13 072A)</option>
-          </optgroup>
-          <optgroup label="Samsons Inn">
-            <option value="Samsons Inn 45 KVA">Samsons Inn — 45 KVA Generator</option>
-            <option value="Samsons Inn 33 KVA">Samsons Inn — 33 KVA Generator</option>
-          </optgroup>
-          <optgroup label="Green Valley">
-            <option value="Green Valley Generator">Green Valley — 45 KVA Generator</option>
-          </optgroup>
-          <optgroup label="Vehicles & Machinery">
-            <option value="PistenBully">PistenBully</option>
-            <option value="Snow Blower">Snow Blower</option>
-            <option value="Tractor 360">Tractor 360</option>
-            <option value="Loader (FL-01)">Loader (FL-01)</option>
-            <option value="Dayna AK1214">Dayna AK1214</option>
-            <option value="GM Vigo">GM Vigo</option>
-          </optgroup>
-          <optgroup label="Other">
-            <option value="Other">Other (specify in notes)</option>
-          </optgroup>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Litres Issued</label>
-        <input type="number" id="issue-litres" placeholder="e.g. 200" min="1" step="1">
-      </div>
-      <div class="form-group">
-        <label>Issued By</label>
-        <input type="text" id="issue-by" placeholder="Name">
-      </div>
-      <div class="form-group full">
-        <label>Purpose / Notes</label>
-        <input type="text" id="issue-notes" placeholder="e.g. Weekly refuel, standby top-up, special request…">
-      </div>
-    </div>
-    <!-- Live stock preview -->
-    <div id="issue-preview" style="background:#fff8e1;border:1px solid #fcd34d;border-radius:8px;padding:12px 14px;margin:12px 0;display:none;">
-      <span style="font-size:12px;color:var(--muted);">Stock after this issue:&nbsp;</span>
-      <span id="issue-stock-after" style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--amber);"></span>
-      <span id="issue-low-warn" style="font-size:12px;color:var(--red);margin-left:10px;display:none;">⚠️ Below minimum par</span>
-    </div>
-    <button class="btn-submit" style="margin-top:10px;background:var(--amber);color:#fff;" onclick="submitIssue()">📤 Issue Diesel</button>
-  </div>
-
-  <!-- Issuance history -->
-  <div class="section-title" style="font-size:16px;"><span class="accent">📤</span> Issuance History</div>
-  <div id="issue-loading" style="text-align:center;padding:20px;color:var(--muted);display:none;">
-    <div class="spinner" style="margin:0 auto 8px;"></div>Loading…
-  </div>
-  <div id="issue-content">
-    <div class="table-wrap" style="margin-bottom:24px;">
-      <table>
-        <thead>
-          <tr><th>Date</th><th>Issued To</th><th>Litres</th><th>Stock After</th><th>Purpose</th><th>Issued By</th></tr>
-        </thead>
-        <tbody id="issue-body"></tbody>
-      </table>
-    </div>
-  </div>
-
   <!-- Delivery history -->
   <div class="section-title" style="font-size:16px;"><span class="accent">📋</span> Delivery History</div>
   <div id="delivery-loading" style="text-align:center;padding:30px;color:var(--muted);">
@@ -1437,6 +1362,138 @@
         <tbody id="delivery-body"></tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB: DIESEL OUT
+     ============================================================ -->
+<div id="tab-diesel-out" class="page">
+  <div class="section-title"><span class="accent">📤</span> Diesel Out — Issue to Department</div>
+
+  <!-- Live stock hero -->
+  <div class="stock-hero" id="diesel-out-stock-hero" style="margin-bottom:22px;"></div>
+
+  <!-- Issue form -->
+  <div class="section-title" style="font-size:16px;"><span class="accent">➕</span> Log New Issue</div>
+  <div class="config-panel" style="margin-bottom:24px;">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Record diesel drawn from the main tank and issued to any generator, vehicle, or machine. Stock deducts immediately.</p>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Issue Date</label>
+        <input type="date" id="issue-date">
+      </div>
+      <div class="form-group">
+        <label>Issued To (Consumer)</label>
+        <select id="issue-consumer" onchange="updateIssuePreview()">
+          <option value="">— Select consumer —</option>
+          <optgroup label="MJSR Generators">
+            <option value="340 KVA Generator">340 KVA Generator (P126Ti)</option>
+            <option value="110 KVA Generator">110 KVA Generator (2428-1500)</option>
+            <option value="500 KVA Generator">500 KVA Generator (DC13 072A)</option>
+          </optgroup>
+          <optgroup label="Samsons Inn">
+            <option value="Samsons Inn 45 KVA">Samsons Inn — 45 KVA Generator</option>
+            <option value="Samsons Inn 33 KVA">Samsons Inn — 33 KVA Generator</option>
+          </optgroup>
+          <optgroup label="Green Valley">
+            <option value="Green Valley Generator">Green Valley — 45 KVA Generator</option>
+          </optgroup>
+          <optgroup label="Vehicles &amp; Machinery">
+            <option value="PistenBully">PistenBully</option>
+            <option value="Snow Blower">Snow Blower</option>
+            <option value="Tractor 360">Tractor 360</option>
+            <option value="Loader (FL-01)">Loader (FL-01)</option>
+            <option value="Dayna AK1214">Dayna AK1214</option>
+            <option value="GM Vigo">GM Vigo</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="Other">Other (specify in notes)</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Litres Issued</label>
+        <input type="number" id="issue-litres" placeholder="e.g. 200" min="1" step="1" oninput="updateIssuePreview()">
+      </div>
+      <div class="form-group">
+        <label>Issued By</label>
+        <input type="text" id="issue-by" placeholder="Name">
+      </div>
+      <div class="form-group full">
+        <label>Purpose / Notes</label>
+        <input type="text" id="issue-notes" placeholder="e.g. Weekly refuel, standby top-up, special request…">
+      </div>
+    </div>
+
+    <!-- Live stock preview -->
+    <div id="issue-preview" style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:14px 16px;margin:14px 0;display:none;">
+      <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:center;">
+        <div>
+          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;">Current Stock</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;" id="issue-current-stock">—</div>
+        </div>
+        <div style="font-size:20px;color:var(--muted);">→</div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;">Stock After Issue</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;" id="issue-stock-after">—</div>
+        </div>
+        <div id="issue-low-warn" style="background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--red);display:none;">⚠️ Below minimum par — order required</div>
+      </div>
+    </div>
+
+    <button class="btn-submit" style="background:#d97706;color:#fff;" onclick="submitIssue()">📤 Issue Diesel</button>
+  </div>
+
+  <!-- Filter + history -->
+  <div class="section-title" style="font-size:16px;"><span class="accent">📋</span> Issuance History</div>
+
+  <div class="filter-row" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+    <div class="form-group">
+      <label>Consumer</label>
+      <select id="out-filter-consumer" onchange="filterIssuanceHistory()">
+        <option value="">All Consumers</option>
+        <option>340 KVA Generator</option>
+        <option>110 KVA Generator</option>
+        <option>500 KVA Generator</option>
+        <option>Samsons Inn 45 KVA</option>
+        <option>Samsons Inn 33 KVA</option>
+        <option>Green Valley Generator</option>
+        <option>PistenBully</option>
+        <option>Snow Blower</option>
+        <option>Tractor 360</option>
+        <option>Loader (FL-01)</option>
+        <option>Dayna AK1214</option>
+        <option>GM Vigo</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>From</label>
+      <input type="date" id="out-filter-from" onchange="filterIssuanceHistory()">
+    </div>
+    <div class="form-group">
+      <label>To</label>
+      <input type="date" id="out-filter-to" onchange="filterIssuanceHistory()">
+    </div>
+    <button class="btn-secondary" onclick="clearIssuanceFilters()" style="align-self:flex-end;">Clear</button>
+  </div>
+
+  <div style="font-size:12px;color:var(--muted);margin-bottom:10px;" id="out-count"></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Issued To</th>
+          <th>Litres</th>
+          <th>Stock After</th>
+          <th>Purpose / Notes</th>
+          <th>Issued By</th>
+        </tr>
+      </thead>
+      <tbody id="issue-body"></tbody>
+    </table>
   </div>
 </div>
 
@@ -1597,6 +1654,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('del-date').value = today;
   document.getElementById('dc-measure-date').value = today;
   document.getElementById('issue-date').value = today;
+  document.getElementById('out-filter-from').value = d30.toISOString().slice(0,10);
+  document.getElementById('out-filter-to').value = today;
   updateClock();
   setInterval(updateClock, 1000);
 
@@ -1643,6 +1702,7 @@ function switchTab(id) {
   if (id === 'diesel-log')      loadDieselLog();
   if (id === 'diesel-overview') loadDieselOverview();
   if (id === 'diesel-delivery') loadDieselDelivery();
+  if (id === 'diesel-out')      loadDieselOut();
   if (id === 'diesel-config')   loadDieselConfig();
 }
 
@@ -2643,7 +2703,7 @@ function renderStockHero(elId, litres) {
 
 function refreshAllStockHeroes() {
   const s = getRunningStock();
-  ['stock-hero-block','delivery-stock-hero','dconfig-stock-hero'].forEach(id => {
+  ['stock-hero-block','delivery-stock-hero','dconfig-stock-hero','diesel-out-stock-hero'].forEach(id => {
     const el = document.getElementById(id);
     if (el && el.closest('.page')) renderStockHero(id, s);
   });
@@ -2916,21 +2976,56 @@ async function submitDelivery() {
 // ── DIESEL ISSUANCE ───────────────────────────────────────
 let issuanceLog = []; // in-session cache
 
-// Wire preview update whenever litres field changes
-document.addEventListener('DOMContentLoaded', () => {
-  const litresEl = document.getElementById('issue-litres');
-  if (litresEl) {
-    litresEl.addEventListener('input', updateIssuePreview);
-  }
-});
+function loadDieselOut() {
+  // Render stock hero for this tab
+  renderStockHero('diesel-out-stock-hero', getRunningStock());
+  // Render current issuance log with any filters applied
+  filterIssuanceHistory();
+}
+
+function filterIssuanceHistory() {
+  const consumer = (document.getElementById('out-filter-consumer') || {}).value || '';
+  const from     = (document.getElementById('out-filter-from')    || {}).value || '';
+  const to       = (document.getElementById('out-filter-to')      || {}).value || '';
+
+  let rows = issuanceLog;
+  if (consumer) rows = rows.filter(r => r.consumer === consumer);
+  if (from)     rows = rows.filter(r => r.date >= from);
+  if (to)       rows = rows.filter(r => r.date <= to);
+
+  const countEl = document.getElementById('out-count');
+  if (countEl) countEl.textContent = `${rows.length} record${rows.length !== 1 ? 's' : ''}`;
+
+  renderIssuanceTable(rows);
+}
+
+function clearIssuanceFilters() {
+  const today = new Date().toISOString().slice(0,10);
+  const d30 = new Date(); d30.setDate(d30.getDate()-30);
+  const cf = document.getElementById('out-filter-consumer');
+  const ff = document.getElementById('out-filter-from');
+  const tf = document.getElementById('out-filter-to');
+  if (cf) cf.value = '';
+  if (ff) ff.value = d30.toISOString().slice(0,10);
+  if (tf) tf.value = today;
+  filterIssuanceHistory();
+}
 
 function updateIssuePreview() {
   const litres = parseFloat(document.getElementById('issue-litres').value) || 0;
+  const current = getRunningStock();
   if (litres <= 0) { document.getElementById('issue-preview').style.display = 'none'; return; }
-  const stockAfter = Math.max(0, getRunningStock() - litres);
+  const stockAfter = Math.max(0, current - litres);
   const par = getEffectivePar();
-  document.getElementById('issue-stock-after').textContent = stockAfter.toLocaleString() + ' L';
-  document.getElementById('issue-low-warn').style.display = stockAfter <= par ? 'inline' : 'none';
+
+  const curEl  = document.getElementById('issue-current-stock');
+  const aftEl  = document.getElementById('issue-stock-after');
+  const warnEl = document.getElementById('issue-low-warn');
+
+  if (curEl)  { curEl.textContent = current.toLocaleString() + ' L'; curEl.style.color = 'var(--text)'; }
+  if (aftEl)  { aftEl.textContent = stockAfter.toLocaleString() + ' L'; aftEl.style.color = stockAfter <= par ? 'var(--red)' : 'var(--green)'; }
+  if (warnEl) warnEl.style.display = stockAfter <= par ? 'block' : 'none';
+
   document.getElementById('issue-preview').style.display = 'block';
 }
 
@@ -2999,8 +3094,10 @@ async function submitIssue() {
   issuanceLog.unshift({ date, consumer, litres, stock_after: stockAfter, notes, by });
   renderIssuanceTable(issuanceLog);
 
-  // Step 5: refresh all stock heroes
+  // Step 5: refresh all stock heroes (including the new Diesel Out tab hero)
   refreshAllStockHeroes();
+  const outHero = document.getElementById('diesel-out-stock-hero');
+  if (outHero) renderStockHero('diesel-out-stock-hero', getRunningStock());
 
   // Alert if below par
   if (stockAfter <= getEffectivePar()) {
@@ -3015,6 +3112,9 @@ async function submitIssue() {
   document.getElementById('issue-by').value = '';
   document.getElementById('issue-consumer').value = '';
   document.getElementById('issue-preview').style.display = 'none';
+
+  // Re-render history with current filters
+  filterIssuanceHistory();
 }
 
 function renderIssuanceTable(rows) {
