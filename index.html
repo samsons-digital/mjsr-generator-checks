@@ -1533,7 +1533,7 @@
   <div class="filter-row" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px;">
     <div class="form-group">
       <label>Consumer</label>
-      <select id="out-filter-consumer" onchange="filterIssuanceHistory()">
+      <select id="out-filter-consumer" onchange="fetchIssuanceHistory()">
         <option value="">All Consumers</option>
         <option>340 KVA Generator</option>
         <option>110 KVA Generator</option>
@@ -1552,11 +1552,11 @@
     </div>
     <div class="form-group">
       <label>From</label>
-      <input type="date" id="out-filter-from" onchange="filterIssuanceHistory()">
+      <input type="date" id="out-filter-from" onchange="fetchIssuanceHistory()">
     </div>
     <div class="form-group">
       <label>To</label>
-      <input type="date" id="out-filter-to" onchange="filterIssuanceHistory()">
+      <input type="date" id="out-filter-to" onchange="fetchIssuanceHistory()">
     </div>
     <button class="btn-secondary" onclick="clearIssuanceFilters()" style="align-self:flex-end;">Clear</button>
   </div>
@@ -3123,24 +3123,48 @@ let issuanceLog = []; // in-session cache
 function loadDieselOut() {
   // Render stock hero for this tab
   renderStockHero('diesel-out-stock-hero', getRunningStock());
-  // Render current issuance log with any filters applied
-  filterIssuanceHistory();
+  // Fetch issuance history from sheet
+  fetchIssuanceHistory();
 }
 
-function filterIssuanceHistory() {
+async function fetchIssuanceHistory() {
   const consumer = (document.getElementById('out-filter-consumer') || {}).value || '';
-  const from     = (document.getElementById('out-filter-from')    || {}).value || '';
-  const to       = (document.getElementById('out-filter-to')      || {}).value || '';
+  const from     = (document.getElementById('out-filter-from')     || {}).value || '';
+  const to       = (document.getElementById('out-filter-to')       || {}).value || '';
 
+  // Show loading state in the table
+  const countEl = document.getElementById('out-count');
+  const bodyEl  = document.getElementById('issue-body');
+  if (countEl) countEl.textContent = 'Loading…';
+  if (bodyEl)  bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;"><div class="spinner" style="margin:0 auto 8px;width:16px;height:16px;"></div>Fetching from sheet…</td></tr>';
+
+  try {
+    const result = await apiCall({ action: 'getDieselIssues', consumer, from, to });
+    if (result && result.status === 'ok') {
+      const sheetIssues = result.issues || [];
+      // Merge: keep any in-session entries that aren't yet in the sheet response
+      const sessionOnly = issuanceLog.filter(s =>
+        !sheetIssues.some(r => r.date === s.date && r.consumer === s.consumer && Math.abs(r.litres - s.litres) < 0.5)
+      );
+      issuanceLog = [...sheetIssues, ...sessionOnly].sort((a,b) => b.date.localeCompare(a.date));
+    }
+  } catch(e) {
+    // GAS unreachable — show whatever is in session
+  }
+
+  // Apply any local filters to the merged result
   let rows = issuanceLog;
   if (consumer) rows = rows.filter(r => r.consumer === consumer);
   if (from)     rows = rows.filter(r => r.date >= from);
   if (to)       rows = rows.filter(r => r.date <= to);
 
-  const countEl = document.getElementById('out-count');
   if (countEl) countEl.textContent = `${rows.length} record${rows.length !== 1 ? 's' : ''}`;
-
   renderIssuanceTable(rows);
+}
+
+function filterIssuanceHistory() {
+  // Always fetch fresh from sheet so filter changes show correct server data
+  fetchIssuanceHistory();
 }
 
 function clearIssuanceFilters() {
@@ -3152,7 +3176,7 @@ function clearIssuanceFilters() {
   if (cf) cf.value = '';
   if (ff) ff.value = d30.toISOString().slice(0,10);
   if (tf) tf.value = today;
-  filterIssuanceHistory();
+  fetchIssuanceHistory();
 }
 
 function updateIssuePreview() {
@@ -3258,8 +3282,8 @@ async function submitIssue() {
   document.getElementById('issue-consumer').value = '';
   document.getElementById('issue-preview').style.display = 'none';
 
-  // Re-render history with current filters
-  filterIssuanceHistory();
+  // Re-fetch history from sheet to include the new entry
+  fetchIssuanceHistory();
 }
 
 function renderIssuanceTable(rows) {
