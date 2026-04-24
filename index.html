@@ -1797,7 +1797,15 @@ function selectGen(kva) {
   document.getElementById('water-filter-row').style.display = kva === '500' ? 'flex' : 'none';
 }
 
-// ── SYNC INDICATOR ───────────────────────────────────────
+// Wrapper with timeout — prevents GAS hangs from freezing the UI forever
+async function apiCallWithTimeout(payload, ms = 15000) {
+  return Promise.race([
+    apiCall(payload),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timed out after ${ms/1000}s. GAS may need redeploying.`)), ms)
+    )
+  ]);
+}
 let syncResetTimer = null;
 
 function setSyncState(state, label) {
@@ -2769,7 +2777,7 @@ async function initLiveStock() {
   if (liveStockLoading) return;
   liveStockLoading = true;
   try {
-    const result = await apiCall({ action: 'getCurrentStock' });
+    const result = await apiCallWithTimeout({ action: 'getCurrentStock' }, 10000);
     if (result && result.status === 'ok' && typeof result.stock === 'number') {
       liveStockLitres = result.stock;
     } else {
@@ -3132,27 +3140,44 @@ async function fetchIssuanceHistory() {
   const from     = (document.getElementById('out-filter-from')     || {}).value || '';
   const to       = (document.getElementById('out-filter-to')       || {}).value || '';
 
-  // Show loading state in the table
   const countEl = document.getElementById('out-count');
   const bodyEl  = document.getElementById('issue-body');
   if (countEl) countEl.textContent = 'Loading…';
-  if (bodyEl)  bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;"><div class="spinner" style="margin:0 auto 8px;width:16px;height:16px;"></div>Fetching from sheet…</td></tr>';
+  if (bodyEl)  bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Fetching from sheet…</td></tr>';
+
+  let sheetIssues = [];
+  let fetchError = null;
 
   try {
-    const result = await apiCall({ action: 'getDieselIssues', consumer, from, to });
+    const result = await apiCallWithTimeout({ action: 'getDieselIssues', consumer, from, to }, 12000);
     if (result && result.status === 'ok') {
-      const sheetIssues = result.issues || [];
-      // Merge: keep any in-session entries that aren't yet in the sheet response
-      const sessionOnly = issuanceLog.filter(s =>
-        !sheetIssues.some(r => r.date === s.date && r.consumer === s.consumer && Math.abs(r.litres - s.litres) < 0.5)
-      );
-      issuanceLog = [...sheetIssues, ...sessionOnly].sort((a,b) => b.date.localeCompare(a.date));
+      sheetIssues = result.issues || [];
+    } else {
+      fetchError = result ? result.message || 'GAS returned an error. Redeploy the script.' : 'No response from server.';
     }
   } catch(e) {
-    // GAS unreachable — show whatever is in session
+    fetchError = e.message || 'Could not reach Google Sheets.';
   }
 
-  // Apply any local filters to the merged result
+  // If we got an error show it clearly — never leave user staring at blank
+  if (fetchError) {
+    if (countEl) countEl.textContent = 'Load failed';
+    if (bodyEl)  bodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;">
+      <div style="color:var(--red);font-weight:700;margin-bottom:6px;">⚠️ Could not load issuance history</div>
+      <div style="color:var(--muted);font-size:12px;">${fetchError}</div>
+      <div style="color:var(--muted);font-size:11px;margin-top:8px;">Check: GAS is redeployed · Script URL is correct · Sheet exists</div>
+      <button class="btn-secondary" style="margin-top:12px;" onclick="fetchIssuanceHistory()">↻ Retry</button>
+    </td></tr>`;
+    return;
+  }
+
+  // Merge sheet rows with any in-session entries not yet persisted
+  const sessionOnly = issuanceLog.filter(s =>
+    !sheetIssues.some(r => r.date === s.date && r.consumer === s.consumer && Math.abs(r.litres - s.litres) < 0.5)
+  );
+  issuanceLog = [...sheetIssues, ...sessionOnly].sort((a,b) => b.date.localeCompare(a.date));
+
+  // Apply local filters
   let rows = issuanceLog;
   if (consumer) rows = rows.filter(r => r.consumer === consumer);
   if (from)     rows = rows.filter(r => r.date >= from);
